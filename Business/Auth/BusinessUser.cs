@@ -1,11 +1,9 @@
 ﻿using Business.Exceptions;
+using Business.Util;
 using Dal.Auth;
 using Dal.Dto;
 using Dal.Exceptions;
 using Entities.Auth;
-using System.Data;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace Business.Auth
 {
@@ -18,8 +16,8 @@ namespace Business.Auth
         /// <summary>
         /// Inicializa la persistencia
         /// </summary>
-        /// <param name="connection"></param>
-        public BusinessUser(IDbConnection connection) : base(new PersistentUser(connection)) { }
+        /// <param name="persistent">Persistencia en base de datos de los usuarios</param>
+        public BusinessUser(IPersistentUser persistent) : base(persistent) { }
         #endregion
 
         #region Methods
@@ -32,7 +30,7 @@ namespace Business.Auth
         /// <param name="offset">Corrimiento desde el que se cuenta el número de registros</param>
         /// <returns>Listado de usuarios</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar los usuarios</exception>
-        public override ListResult<User> List(string filters, string orders, int limit, int offset)
+        public ListResult<User> List(string filters, string orders, int limit, int offset)
         {
             try
             {
@@ -54,7 +52,7 @@ namespace Business.Auth
         /// <param name="entity">Usuario a consultar</param>
         /// <returns>Usuario con los datos cargados desde la base de datos o null si no lo pudo encontrar</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar los usuarios</exception>
-        public override User Read(User entity)
+        public User Read(User entity)
         {
             try
             {
@@ -77,7 +75,7 @@ namespace Business.Auth
         /// <param name="user">Usuario que realiza la inserción</param>
         /// <returns>Usuario insertado con el id generado por la base de datos</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al insertar el usuario</exception>
-        public override User Insert(User entity, User user)
+        public User Insert(User entity, User user)
         {
             try
             {
@@ -100,7 +98,7 @@ namespace Business.Auth
         /// <param name="user">Usuario que realiza la actualización</param>
         /// <returns>Usuario actualizado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al actualizar el usuario</exception>
-        public override User Update(User entity, User user)
+        public User Update(User entity, User user)
         {
             try
             {
@@ -123,7 +121,7 @@ namespace Business.Auth
         /// <param name="user">Usuario que realiza la eliminación</param>
         /// <returns>Usuario eliminado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al eliminar el usuario</exception>
-        public override User Delete(User entity, User user)
+        public User Delete(User entity, User user)
         {
             try
             {
@@ -152,19 +150,7 @@ namespace Business.Auth
         {
             try
             {
-                string plainPassword = "";
-                using (Aes aes = Aes.Create())
-                {
-                    aes.Key = Encoding.UTF8.GetBytes(key);
-                    aes.IV = Encoding.UTF8.GetBytes(iv);
-
-                    ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
-                    using MemoryStream msDecrypt = new(Convert.FromBase64String(password));
-                    using CryptoStream csDecrypt = new(msDecrypt, decryptor, CryptoStreamMode.Read);
-                    using StreamReader srDecrypt = new(csDecrypt);
-                    plainPassword = srDecrypt.ReadToEnd();
-                }
-                return ((PersistentUser)_persistent).ReadByLoginAndPassword(entity, plainPassword);
+                return ((IPersistentUser)_persistent).ReadByLoginAndPassword(entity, Crypto.Decrypt(password, key, iv));
             }
             catch (PersistentException)
             {
@@ -186,7 +172,7 @@ namespace Business.Auth
         {
             try
             {
-                return ((PersistentUser)_persistent).ReadByLogin(entity);
+                return ((IPersistentUser)_persistent).ReadByLogin(entity);
             }
             catch (PersistentException)
             {
@@ -212,19 +198,7 @@ namespace Business.Auth
         {
             try
             {
-                string plainPassword = "";
-                using (Aes aes = Aes.Create())
-                {
-                    aes.Key = Encoding.UTF8.GetBytes(key);
-                    aes.IV = Encoding.UTF8.GetBytes(iv);
-
-                    ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
-                    using MemoryStream msDecrypt = new(Convert.FromBase64String(password));
-                    using CryptoStream csDecrypt = new(msDecrypt, decryptor, CryptoStreamMode.Read);
-                    using StreamReader srDecrypt = new(csDecrypt);
-                    plainPassword = srDecrypt.ReadToEnd();
-                }
-                return ((PersistentUser)_persistent).UpdatePassword(entity, plainPassword, user);
+                return ((IPersistentUser)_persistent).UpdatePassword(entity, Crypto.Decrypt(password, key, iv), user);
             }
             catch (PersistentException)
             {
@@ -250,7 +224,7 @@ namespace Business.Auth
         {
             try
             {
-                return ((PersistentUser)_persistent).ListRoles(filters, orders, limit, offset, user);
+                return ((IPersistentUser)_persistent).ListRoles(filters, orders, limit, offset, user);
             }
             catch (PersistentException)
             {
@@ -276,7 +250,7 @@ namespace Business.Auth
         {
             try
             {
-                return ((PersistentUser)_persistent).ListNotRoles(filters, orders, limit, offset, user);
+                return ((IPersistentUser)_persistent).ListNotRoles(filters, orders, limit, offset, user);
             }
             catch (PersistentException)
             {
@@ -300,7 +274,7 @@ namespace Business.Auth
         {
             try
             {
-                return ((PersistentUser)_persistent).InsertRole(role, user, user1);
+                return ((IPersistentUser)_persistent).InsertRole(role, user, user1);
             }
             catch (PersistentException)
             {
@@ -324,7 +298,7 @@ namespace Business.Auth
         {
             try
             {
-                return ((PersistentUser)_persistent).DeleteRole(role, user, user1);
+                return ((IPersistentUser)_persistent).DeleteRole(role, user, user1);
             }
             catch (PersistentException)
             {

@@ -1,9 +1,10 @@
 ﻿using Business.Config;
+using Dal;
 using Dal.Dto;
 using Dal.Exceptions;
+using Entities.Auth;
 using Entities.Config;
-using Microsoft.Extensions.Configuration;
-using MySql.Data.MySqlClient;
+using Moq;
 
 namespace Business.Test.Config
 {
@@ -14,11 +15,6 @@ namespace Business.Test.Config
     public class IncomeTypeTest
     {
         #region Attributes
-        /// <summary>
-        /// Configuración de la aplicación de pruebas
-        /// </summary>
-        private readonly IConfiguration _configuration;
-
         /// <summary>
         /// Capa de negocio de los tipos de ingreso
         /// </summary>
@@ -31,11 +27,53 @@ namespace Business.Test.Config
         /// </summary>
         public IncomeTypeTest()
         {
-            _configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", false, false)
-                .AddEnvironmentVariables()
-                .Build();
-            _business = new(new MySqlConnection(_configuration.GetConnectionString("golden") ?? ""));
+            Mock<IPersistentWithLog<IncomeType>> mock = new();
+
+            List<IncomeType> incomeTypes = new()
+            {
+                new IncomeType() { Id = 1, Code = "CI", Name = "Cuota inicial" },
+                new IncomeType() { Id = 2, Code = "CR", Name = "Crédito cartera" },
+                new IncomeType() { Id = 3, Code = "FC", Name = "Factura" }
+            };
+
+            mock.Setup(p => p.List("idincometype = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Returns(new ListResult<IncomeType>(incomeTypes.Where(y => y.Id == 1).ToList(), 1));
+            mock.Setup(p => p.List("idtipoingreso = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Throws<PersistentException>();
+
+            mock.Setup(p => p.Read(It.IsAny<IncomeType>()))
+                .Returns((IncomeType incomeType) => incomeTypes.Find(x => x.Id == incomeType.Id) ?? new IncomeType());
+
+            mock.Setup(p => p.Insert(It.IsAny<IncomeType>(), It.IsAny<User>()))
+                .Returns((IncomeType incomeType, User user) =>
+                {
+                    if (incomeTypes.Exists(x => x.Code == incomeType.Code))
+                    {
+                        throw new PersistentException();
+                    }
+                    else
+                    {
+                        incomeType.Id = incomeTypes.Count + 1;
+                        incomeTypes.Add(incomeType);
+                        return incomeType;
+                    }
+                });
+
+            mock.Setup(p => p.Update(It.IsAny<IncomeType>(), It.IsAny<User>()))
+                .Returns((IncomeType incomeType, User user) =>
+                {
+                    incomeTypes.Where(x => x.Id == incomeType.Id).ToList().ForEach(x => x.Name = incomeType.Name);
+                    return incomeType;
+                });
+
+            mock.Setup(p => p.Delete(It.IsAny<IncomeType>(), It.IsAny<User>()))
+                .Returns((IncomeType incomeType, User user) =>
+                {
+                    incomeTypes = incomeTypes.Where(x => x.Id != incomeType.Id).ToList();
+                    return incomeType;
+                });
+
+            _business = new(mock.Object);
         }
         #endregion
 
@@ -82,7 +120,7 @@ namespace Business.Test.Config
             IncomeType incomeType = new() { Id = 10 };
             incomeType = _business.Read(incomeType);
 
-            Assert.Null(incomeType);
+            Assert.Equal(0, incomeType.Id);
         }
 
         /// <summary>
@@ -124,7 +162,7 @@ namespace Business.Test.Config
             IncomeType incomeType2 = new() { Id = 3 };
             incomeType2 = _business.Read(incomeType2);
 
-            Assert.Null(incomeType2);
+            Assert.Equal(0, incomeType2.Id);
         }
         #endregion
     }

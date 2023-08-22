@@ -1,9 +1,10 @@
 ﻿using Business.Config;
+using Dal;
 using Dal.Dto;
 using Dal.Exceptions;
+using Entities.Auth;
 using Entities.Config;
-using Microsoft.Extensions.Configuration;
-using MySql.Data.MySqlClient;
+using Moq;
 
 namespace Business.Test.Config
 {
@@ -14,11 +15,6 @@ namespace Business.Test.Config
     public class IdentificationTypeTest
     {
         #region Attributes
-        /// <summary>
-        /// Configuración de la aplicación de pruebas
-        /// </summary>
-        private readonly IConfiguration _configuration;
-
         /// <summary>
         /// Capa de negocio de los tipos de identificación
         /// </summary>
@@ -31,11 +27,53 @@ namespace Business.Test.Config
         /// </summary>
         public IdentificationTypeTest()
         {
-            _configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", false, false)
-                .AddEnvironmentVariables()
-                .Build();
-            _business = new(new MySqlConnection(_configuration.GetConnectionString("golden") ?? ""));
+            Mock<IPersistentWithLog<IdentificationType>> mock = new();
+
+            List<IdentificationType> identificationTypes = new()
+            {
+                new IdentificationType() { Id = 1, Name = "Cédula ciudadanía" },
+                new IdentificationType() { Id = 2, Name = "Cédula extranjería" },
+                new IdentificationType() { Id = 3, Name = "Pasaporte" }
+            };
+
+            mock.Setup(p => p.List("ididentificationtype = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Returns(new ListResult<IdentificationType>(identificationTypes.Where(y => y.Id == 1).ToList(), 1));
+            mock.Setup(p => p.List("idtipoidentificacion = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Throws<PersistentException>();
+
+            mock.Setup(p => p.Read(It.IsAny<IdentificationType>()))
+                .Returns((IdentificationType identificationType) => identificationTypes.Find(x => x.Id == identificationType.Id) ?? new IdentificationType());
+
+            mock.Setup(p => p.Insert(It.IsAny<IdentificationType>(), It.IsAny<User>()))
+                .Returns((IdentificationType identificationType, User user) =>
+                {
+                    if (identificationTypes.Exists(x => x.Name == identificationType.Name))
+                    {
+                        throw new PersistentException();
+                    }
+                    else
+                    {
+                        identificationType.Id = identificationTypes.Count + 1;
+                        identificationTypes.Add(identificationType);
+                        return identificationType;
+                    }
+                });
+
+            mock.Setup(p => p.Update(It.IsAny<IdentificationType>(), It.IsAny<User>()))
+                .Returns((IdentificationType identificationType, User user) =>
+                {
+                    identificationTypes.Where(x => x.Id == identificationType.Id).ToList().ForEach(x => x.Name = identificationType.Name);
+                    return identificationType;
+                });
+
+            mock.Setup(p => p.Delete(It.IsAny<IdentificationType>(), It.IsAny<User>()))
+                .Returns((IdentificationType identificationType, User user) =>
+                {
+                    identificationTypes = identificationTypes.Where(x => x.Id != identificationType.Id).ToList();
+                    return identificationType;
+                });
+
+            _business = new(mock.Object);
         }
         #endregion
 
@@ -70,7 +108,7 @@ namespace Business.Test.Config
             IdentificationType identificationType = new() { Id = 1 };
             identificationType = _business.Read(identificationType);
 
-            Assert.Equal("Cedula ciudadania", identificationType.Name);
+            Assert.Equal("Cédula ciudadanía", identificationType.Name);
         }
 
         /// <summary>
@@ -82,7 +120,7 @@ namespace Business.Test.Config
             IdentificationType identificationType = new() { Id = 10 };
             identificationType = _business.Read(identificationType);
 
-            Assert.Null(identificationType);
+            Assert.Equal(0, identificationType.Id);
         }
 
         /// <summary>
@@ -109,7 +147,7 @@ namespace Business.Test.Config
             IdentificationType identificationType2 = new() { Id = 2 };
             identificationType2 = _business.Read(identificationType2);
 
-            Assert.NotEqual("Cedula extranjeria", identificationType2.Name);
+            Assert.NotEqual("Cédula extranjería", identificationType2.Name);
         }
 
         /// <summary>
@@ -124,7 +162,7 @@ namespace Business.Test.Config
             IdentificationType identificationType2 = new() { Id = 3 };
             identificationType2 = _business.Read(identificationType2);
 
-            Assert.Null(identificationType2);
+            Assert.Equal(0, identificationType2.Id);
         }
         #endregion
     }

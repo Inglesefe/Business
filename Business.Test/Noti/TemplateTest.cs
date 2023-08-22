@@ -1,9 +1,9 @@
 ﻿using Business.Noti;
+using Dal;
 using Dal.Dto;
 using Dal.Exceptions;
 using Entities.Noti;
-using Microsoft.Extensions.Configuration;
-using MySql.Data.MySqlClient;
+using Moq;
 
 namespace Business.Test.Noti
 {
@@ -14,11 +14,6 @@ namespace Business.Test.Noti
     public class TemplateTest
     {
         #region Attributes
-        /// <summary>
-        /// Configuración de la plantilla de pruebas
-        /// </summary>
-        private readonly IConfiguration _configuration;
-
         /// <summary>
         /// Capa de negocio de las plantillas
         /// </summary>
@@ -31,11 +26,9 @@ namespace Business.Test.Noti
         /// </summary>
         public TemplateTest()
         {
-            _configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", false, false)
-                .AddEnvironmentVariables()
-                .Build();
-            _business = new(new MySqlConnection(_configuration.GetConnectionString("golden") ?? ""));
+            Mock<IPersistentWithLog<Template>> mock = new();
+
+            _business = new(mock.Object);
         }
         #endregion
 
