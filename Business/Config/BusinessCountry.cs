@@ -1,10 +1,9 @@
 ﻿using Business.Exceptions;
-using Dal.Config;
+using Dal;
 using Dal.Dto;
 using Dal.Exceptions;
 using Entities.Auth;
 using Entities.Config;
-using System.Data;
 
 namespace Business.Config
 {
@@ -17,8 +16,8 @@ namespace Business.Config
         /// <summary>
         /// Inicializa la persistencia
         /// </summary>
-        /// <param name="connection">Conexión a la base de datos</param>
-        public BusinessCountry(IDbConnection connection) : base(new PersistentCountry(connection)) { }
+        /// <param name="persistent">Persistencia en base de datos de los paises</param>
+        public BusinessCountry(IPersistentWithLog<Country> persistent) : base(persistent) { }
         #endregion
 
         #region Methods
@@ -31,7 +30,7 @@ namespace Business.Config
         /// <param name="offset">Corrimiento desde el que se cuenta el número de registros</param>
         /// <returns>Listado de paises</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar las paises</exception>
-        public override ListResult<Country> List(string filters, string orders, int limit, int offset)
+        public ListResult<Country> List(string filters, string orders, int limit, int offset)
         {
             try
             {
@@ -53,7 +52,7 @@ namespace Business.Config
         /// <param name="entity">País a consultar</param>
         /// <returns>País con los datos cargados desde la base de datos o null si no lo pudo encontrar</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar el país</exception>
-        public override Country Read(Country entity)
+        public Country Read(Country entity)
         {
             try
             {
@@ -72,7 +71,7 @@ namespace Business.Config
         /// <returns>País insertado con el id generado por la base de datos</returns>
         /// <param name="user">Usuario que realiza la inserción</param>
         /// <exception cref="BusinessException">Si hubo una excepción al insertar el país</exception>
-        public override Country Insert(Country entity, User user)
+        public Country Insert(Country entity, User user)
         {
             try
             {
@@ -95,7 +94,7 @@ namespace Business.Config
         /// <param name="user">Usuario que realiza la actualización</param>
         /// <returns>País actualizada</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al actualizar el país</exception>
-        public override Country Update(Country entity, User user)
+        public Country Update(Country entity, User user)
         {
             try
             {
@@ -118,7 +117,7 @@ namespace Business.Config
         /// <param name="user">Usuario que realiza la eliminación</param>
         /// <returns>País eliminado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al eliminar el país</exception>
-        public override Country Delete(Country entity, User user)
+        public Country Delete(Country entity, User user)
         {
             try
             {

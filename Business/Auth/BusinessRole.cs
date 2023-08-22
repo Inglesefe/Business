@@ -3,7 +3,6 @@ using Dal.Auth;
 using Dal.Dto;
 using Dal.Exceptions;
 using Entities.Auth;
-using System.Data;
 
 namespace Business.Auth
 {
@@ -16,8 +15,8 @@ namespace Business.Auth
         /// <summary>
         /// Inicializa la conexión a la bse de datos
         /// </summary>
-        /// <param name="connection">Conexión a la base de datos</param>
-        public BusinessRole(IDbConnection connection) : base(new PersistentRole(connection)) { }
+        /// <param name="persistent">Persistencia en base de datos de los roles</param>
+        public BusinessRole(IPersistentRole persistent) : base(persistent) { }
         #endregion
 
         #region Methods
@@ -30,7 +29,7 @@ namespace Business.Auth
         /// <param name="offset">Corrimiento desde el que se cuenta el número de registros</param>
         /// <returns>Listado de roles</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar los roles</exception>
-        public override ListResult<Role> List(string filters, string orders, int limit, int offset)
+        public ListResult<Role> List(string filters, string orders, int limit, int offset)
         {
             try
             {
@@ -52,7 +51,7 @@ namespace Business.Auth
         /// <param name="entity">Rol a consultar</param>
         /// <returns>Rol con los datos cargados desde la base de datos o null si no lo pudo encontrar</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar el rol</exception>
-        public override Role Read(Role entity)
+        public Role Read(Role entity)
         {
             try
             {
@@ -75,7 +74,7 @@ namespace Business.Auth
         /// <param name="user">Usuario que realiza la inserción</param>
         /// <returns>Rol insertado con el id generado por la base de datos</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al insertar el rol</exception>
-        public override Role Insert(Role entity, User user)
+        public Role Insert(Role entity, User user)
         {
             try
             {
@@ -98,7 +97,7 @@ namespace Business.Auth
         /// <param name="user">Usuario que realiza la actualización</param>
         /// <returns>Rol actualizado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al actualizar el rol</exception>
-        public override Role Update(Role entity, User user)
+        public Role Update(Role entity, User user)
         {
             try
             {
@@ -121,7 +120,7 @@ namespace Business.Auth
         /// <param name="user">Usuario que realiza la eliminación</param>
         /// <returns>Rol eliminado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al eliminar el rol</exception>
-        public override Role Delete(Role entity, User user)
+        public Role Delete(Role entity, User user)
         {
             try
             {
@@ -151,7 +150,7 @@ namespace Business.Auth
         {
             try
             {
-                return ((PersistentRole)_persistent).ListUsers(filters, orders, limit, offset, role);
+                return ((IPersistentRole)_persistent).ListUsers(filters, orders, limit, offset, role);
             }
             catch (PersistentException)
             {
@@ -177,7 +176,7 @@ namespace Business.Auth
         {
             try
             {
-                return ((PersistentRole)_persistent).ListNotUsers(filters, orders, limit, offset, role);
+                return ((IPersistentRole)_persistent).ListNotUsers(filters, orders, limit, offset, role);
             }
             catch (PersistentException)
             {
@@ -201,7 +200,7 @@ namespace Business.Auth
         {
             try
             {
-                return ((PersistentRole)_persistent).InsertUser(user, role, user1);
+                return ((IPersistentRole)_persistent).InsertUser(user, role, user1);
             }
             catch (PersistentException)
             {
@@ -225,7 +224,7 @@ namespace Business.Auth
         {
             try
             {
-                return ((PersistentRole)_persistent).DeleteUser(user, role, user1);
+                return ((IPersistentRole)_persistent).DeleteUser(user, role, user1);
             }
             catch (PersistentException)
             {
@@ -251,7 +250,7 @@ namespace Business.Auth
         {
             try
             {
-                return ((PersistentRole)_persistent).ListApplications(filters, orders, limit, offset, role);
+                return ((IPersistentRole)_persistent).ListApplications(filters, orders, limit, offset, role);
             }
             catch (PersistentException)
             {
@@ -277,7 +276,7 @@ namespace Business.Auth
         {
             try
             {
-                return ((PersistentRole)_persistent).ListNotApplications(filters, orders, limit, offset, role);
+                return ((IPersistentRole)_persistent).ListNotApplications(filters, orders, limit, offset, role);
             }
             catch (PersistentException)
             {
@@ -301,7 +300,7 @@ namespace Business.Auth
         {
             try
             {
-                return ((PersistentRole)_persistent).InsertApplication(application, role, user);
+                return ((IPersistentRole)_persistent).InsertApplication(application, role, user);
             }
             catch (PersistentException)
             {
@@ -325,7 +324,7 @@ namespace Business.Auth
         {
             try
             {
-                return ((PersistentRole)_persistent).DeleteApplication(application, role, user);
+                return ((IPersistentRole)_persistent).DeleteApplication(application, role, user);
             }
             catch (PersistentException)
             {

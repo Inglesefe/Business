@@ -13,15 +13,14 @@ Consulte implementación para obtener notas sobre la implementación del proyect
 
 ### Prerequisitos
 
-Este proyecto está desarrollado en .net core 7, el paquete propio de Dal y el conector a Mysql para el proyecto de pruebas  
+Este proyecto está desarrollado en .net core 7, el paquete propio de Dal  
 [<img src="https://adrianwilczynski.gallerycdn.vsassets.io/extensions/adrianwilczynski/asp-net-core-switcher/2.0.2/1577043327534/Microsoft.VisualStudio.Services.Icons.Default" width="50px" height="50px" />](https://dotnet.microsoft.com/en-us/download/dotnet/7.0)  
 [Dal](https://github.com/Inglesefe/Dal/pkgs/nuget/Dal)  
-[Mysql.Data](https://www.nuget.org/packages/MySql.Data)
 
 ## Pruebas
 
-Para ejecutar las pruebas unitarias, es necesario tener instalado MySQL en el ambiente y ejecutar el script db-test.sql que se encuentra en el proyecto de pruebas.
-La conexión se realiza con los datos del archivo appsettings.json del proyecto de pruebas o desde variables de entorno del equipo con esos mismos nombres.
+Para ejecutar las pruebas unitarias, es necesario tener conectividad al servidor de correo.
+La persistencia a la base de datos es suplantada por mocks, y los datos necesario para las pruebas son tomados del archivo appsettings.json del proyecto de pruebas o desde variables de entorno del equipo con esos mismos nombres.
 
 ## Despliegue
 

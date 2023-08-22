@@ -1,10 +1,12 @@
 ﻿using Business.Dto;
 using Business.Noti;
+using Dal;
 using Dal.Dto;
 using Dal.Exceptions;
+using Entities.Auth;
 using Entities.Noti;
 using Microsoft.Extensions.Configuration;
-using MySql.Data.MySqlClient;
+using Moq;
 
 namespace Business.Test.Noti
 {
@@ -41,7 +43,40 @@ namespace Business.Test.Noti
                 .AddJsonFile("appsettings.json", false, false)
                 .AddEnvironmentVariables()
                 .Build();
-            _business = new(new MySqlConnection(_configuration.GetConnectionString("golden") ?? ""));
+            Mock<IPersistentWithLog<Notification>> mock = new();
+            Mock<IPersistentWithLog<Template>> mockTemplate = new();
+
+            List<Notification> notifications = new()
+            {
+                new Notification() { Id = 1, Date = DateTime.Now, To = "leandrobaena@gmail.com", Subject = "Correo de prueba", Content = "<h1>Esta es una prueba hecha por leandrobaena@gmail.com</h1>", User = 1 }
+            };
+            List<Template> templates = new()
+            {
+                new Template() { Id = 1, Name = "Plantilla de prueba", Content = "<h1>Esta es una prueba hecha por #{user}#</h1>" }
+            };
+
+            mock.Setup(p => p.List("idnotification = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Returns(new ListResult<Notification>(notifications.Where(y => y.Id == 1).ToList(), 1));
+            mock.Setup(p => p.List("idnotificacion = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Throws<PersistentException>();
+
+            mock.Setup(p => p.Read(It.IsAny<Notification>()))
+                .Returns((Notification notification) => notifications.Find(x => x.Id == notification.Id) ?? new Notification());
+
+            mock.Setup(p => p.Insert(It.IsAny<Notification>(), It.IsAny<User>()))
+                .Returns((Notification notification, User user) =>
+                {
+                    notification.Id = notifications.Count + 1;
+                    notifications.Add(notification);
+                    return notification;
+                });
+
+            mockTemplate.Setup(p => p.Read(It.IsAny<Template>()))
+                .Returns((Template template) => templates.Find(x => x.Id == template.Id) ?? new Template());
+
+
+            _business = new(mock.Object, mockTemplate.Object);
+
             _smtpConfig = new SmtpConfig()
             {
                 From = _configuration["Smtp:From"] ?? "",
@@ -101,7 +136,7 @@ namespace Business.Test.Noti
             Notification notification = new() { Id = 10 };
             notification = _business.Read(notification);
 
-            Assert.Null(notification);
+            Assert.Equal(0, notification.Id);
         }
 
         /// <summary>

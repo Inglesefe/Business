@@ -1,9 +1,10 @@
 ﻿using Business.Config;
+using Dal;
 using Dal.Dto;
 using Dal.Exceptions;
+using Entities.Auth;
 using Entities.Config;
-using Microsoft.Extensions.Configuration;
-using MySql.Data.MySqlClient;
+using Moq;
 
 namespace Business.Test.Config
 {
@@ -14,11 +15,6 @@ namespace Business.Test.Config
     public class PlanTest
     {
         #region Attributes
-        /// <summary>
-        /// Configuración de la aplicación de pruebas
-        /// </summary>
-        private readonly IConfiguration _configuration;
-
         /// <summary>
         /// Capa de negocio de los planes
         /// </summary>
@@ -31,11 +27,54 @@ namespace Business.Test.Config
         /// </summary>
         public PlanTest()
         {
-            _configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", false, false)
-                .AddEnvironmentVariables()
-                .Build();
-            _business = new(new MySqlConnection(_configuration.GetConnectionString("golden") ?? ""));
+            Mock<IPersistentWithLog<Plan>> mock = new();
+
+            List<Plan> plans = new()
+            {
+                new Plan() { Id = 1, Value = 3779100, InitialFee = 444600, InstallmentsNumber = 12, InstallmentValue = 444600, Active = true, Description = "PLAN COFREM 12 MESES" },
+                new Plan() { Id = 2, Value = 3779100, InitialFee = 282600, InstallmentsNumber = 15, InstallmentValue = 233100, Active = true, Description = "PLAN COFREM 15 MESES" },
+                new Plan() { Id = 3, Value = 3779100, InitialFee = 235350, InstallmentsNumber = 15, InstallmentValue = 236250, Active = false, Description = "PLAN COFREM 15 MESES ESPECIAL" }
+            };
+
+            mock.Setup(p => p.List("idplan = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Returns(new ListResult<Plan>(plans.Where(y => y.Id == 1).ToList(), 1));
+            mock.Setup(p => p.List("idplano = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Throws<PersistentException>();
+
+            mock.Setup(p => p.Read(It.IsAny<Plan>()))
+                .Returns((Plan plan) => plans.Find(x => x.Id == plan.Id) ?? new Plan());
+
+            mock.Setup(p => p.Insert(It.IsAny<Plan>(), It.IsAny<User>()))
+                .Returns((Plan plan, User user) =>
+                {
+                    plan.Id = plans.Count + 1;
+                    plans.Add(plan);
+                    return plan;
+                });
+
+            mock.Setup(p => p.Update(It.IsAny<Plan>(), It.IsAny<User>()))
+                .Returns((Plan plan, User user) =>
+                {
+                    plans.Where(x => x.Id == plan.Id).ToList().ForEach(x =>
+                    {
+                        x.Value = plan.Value;
+                        x.InitialFee = plan.InitialFee;
+                        x.InstallmentsNumber = plan.InstallmentsNumber;
+                        x.InstallmentValue = plan.InstallmentValue;
+                        x.Active = plan.Active;
+                        x.Description = plan.Description;
+                    });
+                    return plan;
+                });
+
+            mock.Setup(p => p.Delete(It.IsAny<Plan>(), It.IsAny<User>()))
+                .Returns((Plan plan, User user) =>
+                {
+                    plans = plans.Where(x => x.Id != plan.Id).ToList();
+                    return plan;
+                });
+
+            _business = new(mock.Object);
         }
         #endregion
 
@@ -58,7 +97,7 @@ namespace Business.Test.Config
         [Fact]
         public void PlanListWithErrorTest()
         {
-            Assert.Throws<PersistentException>(() => _business.List("idplan = 1", "valor", 1, 0));
+            Assert.Throws<PersistentException>(() => _business.List("idplano = 1", "value", 1, 0));
         }
 
         /// <summary>
@@ -82,7 +121,7 @@ namespace Business.Test.Config
             Plan plan = new() { Id = 10 };
             plan = _business.Read(plan);
 
-            Assert.Null(plan);
+            Assert.Equal(0, plan.Id);
         }
 
         /// <summary>
@@ -124,7 +163,7 @@ namespace Business.Test.Config
             Plan plan2 = new() { Id = 3 };
             plan2 = _business.Read(plan2);
 
-            Assert.Null(plan2);
+            Assert.Equal(0, plan2.Id);
         }
         #endregion
     }
