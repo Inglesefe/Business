@@ -1,10 +1,9 @@
 ﻿using Business.Exceptions;
+using Dal;
 using Dal.Dto;
 using Dal.Exceptions;
-using Dal.Noti;
 using Entities.Auth;
 using Entities.Noti;
-using System.Data;
 
 namespace Business.Noti
 {
@@ -17,8 +16,8 @@ namespace Business.Noti
         /// <summary>
         /// Inicializa la persistencia
         /// </summary>
-        /// <param name="connection">Conexión a la base de datos</param>
-        public BusinessTemplate(IDbConnection connection) : base(new PersistentTemplate(connection)) { }
+        /// <param name="persistent">Persistencia en base de datos de las notificaciones</param>
+        public BusinessTemplate(IPersistentWithLog<Template> persistent) : base(persistent) { }
         #endregion
 
         #region Methods
@@ -31,7 +30,7 @@ namespace Business.Noti
         /// <param name="offset">Corrimiento desde el que se cuenta el número de registros</param>
         /// <returns>Listado de plantillas</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar las plantillas</exception>
-        public override ListResult<Template> List(string filters, string orders, int limit, int offset)
+        public ListResult<Template> List(string filters, string orders, int limit, int offset)
         {
             try
             {
@@ -53,7 +52,7 @@ namespace Business.Noti
         /// <param name="entity">Plantilla a consultar</param>
         /// <returns>Plantilla con los datos cargados desde la base de datos o null si no lo pudo encontrar</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar la plantilla</exception>
-        public override Template Read(Template entity)
+        public Template Read(Template entity)
         {
             try
             {
@@ -72,7 +71,7 @@ namespace Business.Noti
         /// <returns>Plantilla insertada con el id generado por la base de datos</returns>
         /// <param name="user">Usuario que realiza la inserción</param>
         /// <exception cref="BusinessException">Si hubo una excepción al insertar la plantilla</exception>
-        public override Template Insert(Template entity, User user)
+        public Template Insert(Template entity, User user)
         {
             try
             {
@@ -95,7 +94,7 @@ namespace Business.Noti
         /// <param name="user">Usuario que realiza la actualización</param>
         /// <returns>Plantilla actualizada</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al actualizar la plantilla</exception>
-        public override Template Update(Template entity, User user)
+        public Template Update(Template entity, User user)
         {
             try
             {
@@ -118,7 +117,7 @@ namespace Business.Noti
         /// <param name="user">Usuario que realiza la eliminación</param>
         /// <returns>Plantilla eliminada</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al eliminar la plantilla</exception>
-        public override Template Delete(Template entity, User user)
+        public Template Delete(Template entity, User user)
         {
             try
             {

@@ -1,9 +1,10 @@
 ﻿using Business.Config;
+using Dal;
 using Dal.Dto;
 using Dal.Exceptions;
+using Entities.Auth;
 using Entities.Config;
-using Microsoft.Extensions.Configuration;
-using MySql.Data.MySqlClient;
+using Moq;
 
 namespace Business.Test.Config
 {
@@ -14,11 +15,6 @@ namespace Business.Test.Config
     public class CityTest
     {
         #region Attributes
-        /// <summary>
-        /// Configuración de la aplicación de pruebas
-        /// </summary>
-        private readonly IConfiguration _configuration;
-
         /// <summary>
         /// Capa de negocio de las ciudades
         /// </summary>
@@ -31,11 +27,53 @@ namespace Business.Test.Config
         /// </summary>
         public CityTest()
         {
-            _configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", false, false)
-                .AddEnvironmentVariables()
-                .Build();
-            _business = new(new MySqlConnection(_configuration.GetConnectionString("golden") ?? ""));
+            Mock<IPersistentWithLog<City>> mock = new();
+
+            List<City> cities = new()
+            {
+                new City() { Id = 1, Code = "BOG", Name = "Bogotá" },
+                new City() { Id = 1, Code = "MED", Name = "Medellín" },
+                new City() { Id = 1, Code = "CAL", Name = "Cali" }
+            };
+
+            mock.Setup(p => p.List("ci.idcity = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Returns(new ListResult<City>(cities.Where(y => y.Id == 1).ToList(), 1));
+            mock.Setup(p => p.List("idpais = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Throws<PersistentException>();
+
+            mock.Setup(p => p.Read(It.IsAny<City>()))
+                .Returns((City city) => cities.Find(x => x.Id == city.Id) ?? new City());
+
+            mock.Setup(p => p.Insert(It.IsAny<City>(), It.IsAny<User>()))
+                .Returns((City city, User user) =>
+                {
+                    if (cities.Exists(x => x.Code == city.Code))
+                    {
+                        throw new PersistentException();
+                    }
+                    else
+                    {
+                        city.Id = cities.Count + 1;
+                        cities.Add(city);
+                        return city;
+                    }
+                });
+
+            mock.Setup(p => p.Update(It.IsAny<City>(), It.IsAny<User>()))
+                .Returns((City city, User user) =>
+                {
+                    cities.Where(x => x.Id == city.Id).ToList().ForEach(x => x.Code = city.Code);
+                    return city;
+                });
+
+            mock.Setup(p => p.Delete(It.IsAny<City>(), It.IsAny<User>()))
+                .Returns((City city, User user) =>
+                {
+                    cities = cities.Where(x => x.Id != city.Id).ToList();
+                    return city;
+                });
+
+            _business = new(mock.Object);
         }
         #endregion
 
@@ -82,7 +120,7 @@ namespace Business.Test.Config
             City city = new() { Id = 10 };
             city = _business.Read(city);
 
-            Assert.Null(city);
+            Assert.Equal(0, city.Id);
         }
 
         /// <summary>
@@ -136,7 +174,7 @@ namespace Business.Test.Config
             City city2 = new() { Id = 3 };
             city2 = _business.Read(city2);
 
-            Assert.Null(city2);
+            Assert.Equal(0, city2.Id);
         }
         #endregion
     }

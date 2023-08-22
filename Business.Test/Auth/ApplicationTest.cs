@@ -1,9 +1,9 @@
 ﻿using Business.Auth;
+using Dal.Auth;
 using Dal.Dto;
 using Dal.Exceptions;
 using Entities.Auth;
-using Microsoft.Extensions.Configuration;
-using MySql.Data.MySqlClient;
+using Moq;
 
 namespace Business.Test.Auth
 {
@@ -15,12 +15,7 @@ namespace Business.Test.Auth
     {
         #region Attributes
         /// <summary>
-        /// Configuración de la aplicación de pruebas
-        /// </summary>
-        private readonly IConfiguration _configuration;
-
-        /// <summary>
-        /// Capa de negocio de las aplicaciones
+        /// Capa de negocio de las aplicaciones usando la interfaz IPersistenceWithLog
         /// </summary>
         private readonly BusinessApplication _business;
         #endregion
@@ -31,11 +26,97 @@ namespace Business.Test.Auth
         /// </summary>
         public ApplicationTest()
         {
-            _configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", false, false)
-                .AddEnvironmentVariables()
-                .Build();
-            _business = new(new MySqlConnection(_configuration.GetConnectionString("golden") ?? ""));
+            Mock<IPersistentApplication> mock = new();
+
+            List<Application> apps = new()
+            {
+                new Application() { Id = 1, Name = "Autenticación" },
+                new Application() { Id = 2, Name = "Actualízame" },
+                new Application() { Id = 3, Name = "Bórrame" }
+            };
+            List<Role> roles = new()
+            {
+                new Role() { Id = 1, Name = "Administradores" },
+                new Role() { Id = 2, Name = "Actualízame" },
+                new Role() { Id = 3, Name = "Bórrame" },
+                new Role() { Id = 4, Name = "Para probar user_role y application_role" },
+            };
+            List<Tuple<Application, Role>> apps_roles = new()
+            {
+                new Tuple<Application, Role>(apps[0], roles[0]),
+                new Tuple<Application, Role>(apps[0], roles[1]),
+                new Tuple<Application, Role>(apps[1], roles[0]),
+                new Tuple<Application, Role>(apps[1], roles[1])
+            };
+
+            mock.Setup(p => p.List("idapplication = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Returns(new ListResult<Application>(apps.Where(y => y.Id == 1).ToList(), 1));
+            mock.Setup(p => p.List("idaplicacion = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Throws<PersistentException>();
+
+            mock.Setup(p => p.Read(It.IsAny<Application>()))
+                .Returns((Application app) => apps.Find(x => x.Id == app.Id) ?? new Application());
+
+            mock.Setup(p => p.Insert(It.IsAny<Application>(), It.IsAny<User>()))
+                .Returns((Application app, User user) =>
+                {
+                    if (apps.Exists(x => x.Name == app.Name))
+                    {
+                        throw new PersistentException();
+                    }
+                    else
+                    {
+                        app.Id = apps.Count + 1;
+                        apps.Add(app);
+                        return app;
+                    }
+                });
+
+            mock.Setup(p => p.Update(It.IsAny<Application>(), It.IsAny<User>()))
+                .Returns((Application app, User user) =>
+                {
+                    apps.Where(x => x.Id == app.Id).ToList().ForEach(x => x.Name = app.Name);
+                    return app;
+                });
+
+            mock.Setup(p => p.Delete(It.IsAny<Application>(), It.IsAny<User>()))
+                .Returns((Application app, User user) =>
+                {
+                    apps = apps.Where(x => x.Id != app.Id).ToList();
+                    return app;
+                });
+
+            mock.Setup(p => p.ListRoles("", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Application>()))
+                .Returns(new ListResult<Role>(apps_roles.Where(x => x.Item1.Id == 1).Select(x => x.Item2).ToList(), 1));
+
+            mock.Setup(p => p.ListRoles("r.idrole = 2", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Application>()))
+                .Returns(new ListResult<Role>(new List<Role>(), 0));
+
+            mock.Setup(p => p.ListRoles("idaplicación = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Application>()))
+                .Throws<PersistentException>();
+
+            mock.Setup(p => p.ListNotRoles(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Application>()))
+                .Returns((string filters, string orders, int limit, int offset, Application app) =>
+                {
+                    List<Role> result = roles.Where(x => !apps_roles.Exists(y => y.Item1.Id == app.Id && y.Item2.Id == x.Id)).ToList();
+                    return new ListResult<Role>(result, result.Count);
+                });
+
+            mock.Setup(p => p.InsertRole(It.IsAny<Role>(), It.IsAny<Application>(), It.IsAny<User>())).
+                Returns((Role role, Application app, User user) =>
+                {
+                    if (apps_roles.Exists(x => x.Item1.Id == app.Id && x.Item2.Id == role.Id))
+                    {
+                        throw new PersistentException();
+                    }
+                    else
+                    {
+                        apps_roles.Add(new Tuple<Application, Role>(app, role));
+                        return role;
+                    }
+                });
+
+            _business = new(mock.Object);
         }
         #endregion
 
@@ -43,7 +124,6 @@ namespace Business.Test.Auth
         /// <summary>
         /// Prueba la consulta de un listado de aplicaciones con filtros, ordenamientos y límite
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
         public void ApplicationListTest()
         {
@@ -56,7 +136,6 @@ namespace Business.Test.Auth
         /// <summary>
         /// Prueba la consulta de un listado de aplicaciones con filtros, ordenamientos y límite y con errores
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
         public void ApplicationListWithErrorTest()
         {
@@ -66,33 +145,30 @@ namespace Business.Test.Auth
         /// <summary>
         /// Prueba la consulta de una aplicación dada su identificador
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
         public void ApplicationReadTest()
         {
             Application application = new() { Id = 1 };
             application = _business.Read(application);
 
-            Assert.Equal("Autenticacion", application.Name);
+            Assert.Equal("Autenticación", application.Name);
         }
 
         /// <summary>
         /// Prueba la consulta de una aplicación que no existe dado su identificador
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
         public void ApplicationReadNotFoundTest()
         {
             Application application = new() { Id = 10 };
             application = _business.Read(application);
 
-            Assert.Null(application);
+            Assert.Equal(0, application.Id);
         }
 
         /// <summary>
         /// Prueba la inserción de una aplicación
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
         public void ApplicationInsertTest()
         {
@@ -105,11 +181,10 @@ namespace Business.Test.Auth
         /// <summary>
         /// Prueba la inserción de una aplicación con nombre duplicado
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
         public void ApplicationInsertDuplicateTest()
         {
-            Application application = new() { Name = "Autenticacion" };
+            Application application = new() { Name = "Autenticación" };
 
             _ = Assert.Throws<PersistentException>(() => _business.Insert(application, new() { Id = 1 }));
         }
@@ -117,7 +192,6 @@ namespace Business.Test.Auth
         /// <summary>
         /// Prueba la actualización de una aplicación
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
         public void ApplicationUpdateTest()
         {
@@ -133,7 +207,6 @@ namespace Business.Test.Auth
         /// <summary>
         /// Prueba la eliminación de una aplicación
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
         public void ApplicationDeleteTest()
         {
@@ -143,13 +216,11 @@ namespace Business.Test.Auth
             Application application2 = new() { Id = 3 };
             application2 = _business.Read(application2);
 
-            Assert.Null(application2);
+            Assert.Equal(0, application2.Id);
         }
-
         /// <summary>
         /// Prueba la consulta de un listado de roles de una aplicación con filtros, ordenamientos y límite
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
         public void ApplicationListRolesTest()
         {
@@ -162,7 +233,6 @@ namespace Business.Test.Auth
         /// <summary>
         /// Prueba la consulta de un listado de roles de una aplicación con filtros, ordenamientos y límite y con errores
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
         public void ApplicationListRolesWithErrorTest()
         {
@@ -172,7 +242,6 @@ namespace Business.Test.Auth
         /// <summary>
         /// Prueba la consulta de un listado de roles no asignados a una aplicación con filtros, ordenamientos y límite
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
         public void ApplicationListNotRolesTest()
         {
@@ -185,7 +254,6 @@ namespace Business.Test.Auth
         /// <summary>
         /// Prueba la inserción de un rol de una aplicación
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
         public void ApplicationInsertRoleTest()
         {
@@ -197,7 +265,6 @@ namespace Business.Test.Auth
         /// <summary>
         /// Prueba la inserción de un rol de una aplicación duplicado
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
         public void ApplicationInsertRoleDuplicateTest()
         {
@@ -207,7 +274,6 @@ namespace Business.Test.Auth
         /// <summary>
         /// Prueba la eliminación de un rol de una aplicación
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
         public void ApplicationDeleteRoleTest()
         {

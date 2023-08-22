@@ -1,9 +1,10 @@
 ﻿using Business.Config;
+using Dal;
 using Dal.Dto;
 using Dal.Exceptions;
+using Entities.Auth;
 using Entities.Config;
-using Microsoft.Extensions.Configuration;
-using MySql.Data.MySqlClient;
+using Moq;
 
 namespace Business.Test.Config
 {
@@ -14,11 +15,6 @@ namespace Business.Test.Config
     public class CountryTest
     {
         #region Attributes
-        /// <summary>
-        /// Configuración de la aplicación de pruebas
-        /// </summary>
-        private readonly IConfiguration _configuration;
-
         /// <summary>
         /// Capa de negocio de los paises
         /// </summary>
@@ -31,11 +27,53 @@ namespace Business.Test.Config
         /// </summary>
         public CountryTest()
         {
-            _configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", false, false)
-                .AddEnvironmentVariables()
-                .Build();
-            _business = new(new MySqlConnection(_configuration.GetConnectionString("golden") ?? ""));
+            Mock<IPersistentWithLog<Country>> mock = new();
+
+            List<Country> countries = new()
+            {
+                new Country() { Id = 1, Code = "CO", Name = "Colombia" },
+                new Country() { Id = 2, Code = "US", Name = "Estados unidos" },
+                new Country() { Id = 3, Code = "EN", Name = "Inglaterra" }
+            };
+
+            mock.Setup(p => p.List("idcountry = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Returns(new ListResult<Country>(countries.Where(y => y.Id == 1).ToList(), 1));
+            mock.Setup(p => p.List("idpais = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Throws<PersistentException>();
+
+            mock.Setup(p => p.Read(It.IsAny<Country>()))
+                .Returns((Country country) => countries.Find(x => x.Id == country.Id) ?? new Country());
+
+            mock.Setup(p => p.Insert(It.IsAny<Country>(), It.IsAny<User>()))
+                .Returns((Country country, User user) =>
+                {
+                    if (countries.Exists(x => x.Code == country.Code))
+                    {
+                        throw new PersistentException();
+                    }
+                    else
+                    {
+                        country.Id = countries.Count + 1;
+                        countries.Add(country);
+                        return country;
+                    }
+                });
+
+            mock.Setup(p => p.Update(It.IsAny<Country>(), It.IsAny<User>()))
+                .Returns((Country country, User user) =>
+                {
+                    countries.Where(x => x.Id == country.Id).ToList().ForEach(x => x.Code = country.Code);
+                    return country;
+                });
+
+            mock.Setup(p => p.Delete(It.IsAny<Country>(), It.IsAny<User>()))
+                .Returns((Country city, User user) =>
+                {
+                    countries = countries.Where(x => x.Id != city.Id).ToList();
+                    return city;
+                });
+
+            _business = new(mock.Object);
         }
         #endregion
 
@@ -82,7 +120,7 @@ namespace Business.Test.Config
             Country country = new() { Id = 10 };
             country = _business.Read(country);
 
-            Assert.Null(country);
+            Assert.Equal(0, country.Id);
         }
 
         /// <summary>
@@ -136,7 +174,7 @@ namespace Business.Test.Config
             Country country2 = new() { Id = 3 };
             country2 = _business.Read(country2);
 
-            Assert.Null(country2);
+            Assert.Equal(0, country2.Id);
         }
         #endregion
     }

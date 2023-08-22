@@ -1,10 +1,9 @@
 ﻿using Business.Exceptions;
-using Dal.Config;
+using Dal;
 using Dal.Dto;
 using Dal.Exceptions;
 using Entities.Auth;
 using Entities.Config;
-using System.Data;
 
 namespace Business.Config
 {
@@ -17,8 +16,8 @@ namespace Business.Config
         /// <summary>
         /// Inicializa la persistencia
         /// </summary>
-        /// <param name="connection">Conexión a la base de datos</param>
-        public BusinessIdentificationType(IDbConnection connection) : base(new PersistentIdentificationType(connection)) { }
+        /// <param name="persistent">Persistencia en base de datos de los tipos de identificación</param>
+        public BusinessIdentificationType(IPersistentWithLog<IdentificationType> persistent) : base(persistent) { }
         #endregion
 
         #region Methods
@@ -31,7 +30,7 @@ namespace Business.Config
         /// <param name="offset">Corrimiento desde el que se cuenta el número de registros</param>
         /// <returns>Listado de tipos de identificación</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar las tipos de identificación</exception>
-        public override ListResult<IdentificationType> List(string filters, string orders, int limit, int offset)
+        public ListResult<IdentificationType> List(string filters, string orders, int limit, int offset)
         {
             try
             {
@@ -53,7 +52,7 @@ namespace Business.Config
         /// <param name="entity">Tipo de identificación a consultar</param>
         /// <returns>Tipo de identificación con los datos cargados desde la base de datos o null si no lo pudo encontrar</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar el tipo de identificación</exception>
-        public override IdentificationType Read(IdentificationType entity)
+        public IdentificationType Read(IdentificationType entity)
         {
             try
             {
@@ -72,7 +71,7 @@ namespace Business.Config
         /// <returns>Tipo de identificación insertado con el id generado por la base de datos</returns>
         /// <param name="user">Usuario que realiza la inserción</param>
         /// <exception cref="BusinessException">Si hubo una excepción al insertar el tipo de identificación</exception>
-        public override IdentificationType Insert(IdentificationType entity, User user)
+        public IdentificationType Insert(IdentificationType entity, User user)
         {
             try
             {
@@ -95,7 +94,7 @@ namespace Business.Config
         /// <param name="user">Usuario que realiza la actualización</param>
         /// <returns>Tipo de identificación actualizada</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al actualizar el tipo de identificación</exception>
-        public override IdentificationType Update(IdentificationType entity, User user)
+        public IdentificationType Update(IdentificationType entity, User user)
         {
             try
             {
@@ -118,7 +117,7 @@ namespace Business.Config
         /// <param name="user">Usuario que realiza la eliminación</param>
         /// <returns>Tipo de identificación eliminado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al eliminar el tipo de identificación</exception>
-        public override IdentificationType Delete(IdentificationType entity, User user)
+        public IdentificationType Delete(IdentificationType entity, User user)
         {
             try
             {

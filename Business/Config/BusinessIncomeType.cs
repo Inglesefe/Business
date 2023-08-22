@@ -1,10 +1,9 @@
 ﻿using Business.Exceptions;
-using Dal.Config;
+using Dal;
 using Dal.Dto;
 using Dal.Exceptions;
 using Entities.Auth;
 using Entities.Config;
-using System.Data;
 
 namespace Business.Config
 {
@@ -17,8 +16,8 @@ namespace Business.Config
         /// <summary>
         /// Inicializa la persistencia
         /// </summary>
-        /// <param name="connection">Conexión a la base de datos</param>
-        public BusinessIncomeType(IDbConnection connection) : base(new PersistentIncomeType(connection)) { }
+        /// <param name="persistent">Persistencia en base de datos de los tipos de ingreso</param>
+        public BusinessIncomeType(IPersistentWithLog<IncomeType> persistent) : base(persistent) { }
         #endregion
 
         #region Methods
@@ -31,7 +30,7 @@ namespace Business.Config
         /// <param name="offset">Corrimiento desde el que se cuenta el número de registros</param>
         /// <returns>Listado de tipos de ingreso</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar las tipos de ingreso</exception>
-        public override ListResult<IncomeType> List(string filters, string orders, int limit, int offset)
+        public ListResult<IncomeType> List(string filters, string orders, int limit, int offset)
         {
             try
             {
@@ -53,7 +52,7 @@ namespace Business.Config
         /// <param name="entity">Tipo de ingreso a consultar</param>
         /// <returns>Tipo de ingreso con los datos cargados desde la base de datos o null si no lo pudo encontrar</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar el tipo de ingreso</exception>
-        public override IncomeType Read(IncomeType entity)
+        public IncomeType Read(IncomeType entity)
         {
             try
             {
@@ -72,7 +71,7 @@ namespace Business.Config
         /// <returns>Tipo de ingreso insertado con el id generado por la base de datos</returns>
         /// <param name="user">Usuario que realiza la inserción</param>
         /// <exception cref="BusinessException">Si hubo una excepción al insertar el tipo de ingreso</exception>
-        public override IncomeType Insert(IncomeType entity, User user)
+        public IncomeType Insert(IncomeType entity, User user)
         {
             try
             {
@@ -95,7 +94,7 @@ namespace Business.Config
         /// <param name="user">Usuario que realiza la actualización</param>
         /// <returns>Tipo de ingreso actualizada</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al actualizar el tipo de ingreso</exception>
-        public override IncomeType Update(IncomeType entity, User user)
+        public IncomeType Update(IncomeType entity, User user)
         {
             try
             {
@@ -118,7 +117,7 @@ namespace Business.Config
         /// <param name="user">Usuario que realiza la eliminación</param>
         /// <returns>Tipo de ingreso eliminado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al eliminar el tipo de ingreso</exception>
-        public override IncomeType Delete(IncomeType entity, User user)
+        public IncomeType Delete(IncomeType entity, User user)
         {
             try
             {

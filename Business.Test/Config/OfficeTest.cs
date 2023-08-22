@@ -1,9 +1,10 @@
 ﻿using Business.Config;
+using Dal;
 using Dal.Dto;
 using Dal.Exceptions;
+using Entities.Auth;
 using Entities.Config;
-using Microsoft.Extensions.Configuration;
-using MySql.Data.MySqlClient;
+using Moq;
 
 namespace Business.Test.Config
 {
@@ -14,11 +15,6 @@ namespace Business.Test.Config
     public class OfficeTest
     {
         #region Attributes
-        /// <summary>
-        /// Configuración de la aplicación de pruebas
-        /// </summary>
-        private readonly IConfiguration _configuration;
-
         /// <summary>
         /// Capa de negocio de las oficinas
         /// </summary>
@@ -31,11 +27,53 @@ namespace Business.Test.Config
         /// </summary>
         public OfficeTest()
         {
-            _configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", false, false)
-                .AddEnvironmentVariables()
-                .Build();
-            _business = new(new MySqlConnection(_configuration.GetConnectionString("golden") ?? ""));
+            Mock<IPersistentWithLog<Office>> mock = new();
+
+            List<Office> offices = new()
+            {
+                new Office() { Id = 1, Name = "Castellana", Address = "Cl 95" },
+                new Office() { Id = 2, Name = "Kennedy", Address = "Cl 56 sur" },
+                new Office() { Id = 3, Name = "Venecia", Address = "Puente" }
+            };
+
+            mock.Setup(p => p.List("o.idoffice = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Returns(new ListResult<Office>(offices.Where(y => y.Id == 1).ToList(), 1));
+            mock.Setup(p => p.List("idoficina = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Throws<PersistentException>();
+
+            mock.Setup(p => p.Read(It.IsAny<Office>()))
+                .Returns((Office office) => offices.Find(x => x.Id == office.Id) ?? new Office());
+
+            mock.Setup(p => p.Insert(It.IsAny<Office>(), It.IsAny<User>()))
+                .Returns((Office office, User user) =>
+                {
+                    if (offices.Exists(x => x.Name == office.Name))
+                    {
+                        throw new PersistentException();
+                    }
+                    else
+                    {
+                        office.Id = offices.Count + 1;
+                        offices.Add(office);
+                        return office;
+                    }
+                });
+
+            mock.Setup(p => p.Update(It.IsAny<Office>(), It.IsAny<User>()))
+                .Returns((Office office, User user) =>
+                {
+                    offices.Where(x => x.Id == office.Id).ToList().ForEach(x => x.Name = office.Name);
+                    return office;
+                });
+
+            mock.Setup(p => p.Delete(It.IsAny<Office>(), It.IsAny<User>()))
+                .Returns((Office office, User user) =>
+                {
+                    offices = offices.Where(x => x.Id != office.Id).ToList();
+                    return office;
+                });
+
+            _business = new(mock.Object);
         }
         #endregion
 
@@ -82,7 +120,7 @@ namespace Business.Test.Config
             Office office = new() { Id = 10 };
             office = _business.Read(office);
 
-            Assert.Null(office);
+            Assert.Equal(0, office.Id);
         }
 
         /// <summary>
@@ -124,7 +162,7 @@ namespace Business.Test.Config
             Office office2 = new() { Id = 3 };
             office2 = _business.Read(office2);
 
-            Assert.Null(office2);
+            Assert.Equal(0, office2.Id);
         }
         #endregion
     }

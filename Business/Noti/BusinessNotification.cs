@@ -1,13 +1,12 @@
 ﻿using Business.Dto;
 using Business.Exceptions;
+using Dal;
 using Dal.Dto;
 using Dal.Exceptions;
-using Dal.Noti;
 using Entities.Auth;
 using Entities.Noti;
 using MailKit.Net.Smtp;
 using MimeKit;
-using System.Data;
 
 namespace Business.Noti
 {
@@ -20,17 +19,17 @@ namespace Business.Noti
         /// <summary>
         /// Persistencia de las plantillas
         /// </summary>
-        private readonly PersistentTemplate persistentTemplate;
+        private readonly IPersistentWithLog<Template> _persistentTemplate;
         #endregion
 
         #region Constructors
         /// <summary>
         /// Inicializa la persistencia
         /// </summary>
-        /// <param name="connection">Conexión a la base de datos</param>
-        public BusinessNotification(IDbConnection connection) : base(new PersistentNotification(connection))
+        /// <param name="persistent">Persistencia en base de datos de las notificaciones</param>
+        public BusinessNotification(IPersistentWithLog<Notification> persistent, IPersistentWithLog<Template> persistentTemplate) : base(persistent)
         {
-            persistentTemplate = new PersistentTemplate(connection);
+            _persistentTemplate = persistentTemplate;
         }
         #endregion
 
@@ -44,7 +43,7 @@ namespace Business.Noti
         /// <param name="offset">Corrimiento desde el que se cuenta el número de registros</param>
         /// <returns>Listado de notificaciones</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar las notificaciones</exception>
-        public override ListResult<Notification> List(string filters, string orders, int limit, int offset)
+        public ListResult<Notification> List(string filters, string orders, int limit, int offset)
         {
             try
             {
@@ -66,7 +65,7 @@ namespace Business.Noti
         /// <param name="entity">Notificación a consultar</param>
         /// <returns>Notificación con los datos cargados desde la base de datos o null si no lo pudo encontrar</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar la notificación</exception>
-        public override Notification Read(Notification entity)
+        public Notification Read(Notification entity)
         {
             try
             {
@@ -85,7 +84,7 @@ namespace Business.Noti
         /// <returns>Notificación insertada con el id generado por la base de datos</returns>
         /// <param name="user">Usuario que realiza la inserción</param>
         /// <exception cref="BusinessException">Si hubo una excepción al insertar la notificación</exception>
-        public override Notification Insert(Notification entity, User user)
+        public Notification Insert(Notification entity, User user)
         {
             try
             {
@@ -108,7 +107,7 @@ namespace Business.Noti
         /// <param name="user">Usuario que realiza la actualización</param>
         /// <returns>Notificación actualizada</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al actualizar la notificación</exception>
-        public override Notification Update(Notification entity, User user)
+        public Notification Update(Notification entity, User user)
         {
             try
             {
@@ -131,7 +130,7 @@ namespace Business.Noti
         /// <param name="user">Usuario que realiza la eliminación</param>
         /// <returns>Notificación eliminada</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al eliminar la notificación</exception>
-        public override Notification Delete(Notification entity, User user)
+        public Notification Delete(Notification entity, User user)
         {
             try
             {
@@ -156,7 +155,7 @@ namespace Business.Noti
         /// <returns>Notificación cuyo contenido es el de la plantilla con las variables reemplazadas</returns>
         public Notification ReplacedVariables(Notification notification, Template template, IDictionary<string, string> data)
         {
-            template = persistentTemplate.Read(template);
+            template = _persistentTemplate.Read(template);
             foreach (KeyValuePair<string, string> item in data)
             {
                 template.Content = template.Content.Replace("#{" + item.Key + "}#", item.Value);

@@ -1,10 +1,9 @@
 ﻿using Business.Exceptions;
-using Dal.Config;
+using Dal;
 using Dal.Dto;
 using Dal.Exceptions;
 using Entities.Auth;
 using Entities.Config;
-using System.Data;
 
 namespace Business.Config
 {
@@ -17,8 +16,8 @@ namespace Business.Config
         /// <summary>
         /// Inicializa la persistencia
         /// </summary>
-        /// <param name="connection">Conexión a la base de datos</param>
-        public BusinessParameter(IDbConnection connection) : base(new PersistentParameter(connection)) { }
+        /// <param name="persistent">Persistencia en base de datos de los parámetros</param>
+        public BusinessParameter(IPersistentWithLog<Parameter> persistent) : base(persistent) { }
         #endregion
 
         #region Methods
@@ -31,7 +30,7 @@ namespace Business.Config
         /// <param name="offset">Corrimiento desde el que se cuenta el número de registros</param>
         /// <returns>Listado de parámetros</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar las parámetros</exception>
-        public override ListResult<Parameter> List(string filters, string orders, int limit, int offset)
+        public ListResult<Parameter> List(string filters, string orders, int limit, int offset)
         {
             try
             {
@@ -53,7 +52,7 @@ namespace Business.Config
         /// <param name="entity">Parámetro a consultar</param>
         /// <returns>Parámetro con los datos cargados desde la base de datos o null si no lo pudo encontrar</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar el parámetro</exception>
-        public override Parameter Read(Parameter entity)
+        public Parameter Read(Parameter entity)
         {
             try
             {
@@ -72,7 +71,7 @@ namespace Business.Config
         /// <returns>Parámetro insertado con el id generado por la base de datos</returns>
         /// <param name="user">Usuario que realiza la inserción</param>
         /// <exception cref="BusinessException">Si hubo una excepción al insertar el parámetro</exception>
-        public override Parameter Insert(Parameter entity, User user)
+        public Parameter Insert(Parameter entity, User user)
         {
             try
             {
@@ -95,7 +94,7 @@ namespace Business.Config
         /// <param name="user">Usuario que realiza la actualización</param>
         /// <returns>Parámetro actualizada</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al actualizar el parámetro</exception>
-        public override Parameter Update(Parameter entity, User user)
+        public Parameter Update(Parameter entity, User user)
         {
             try
             {
@@ -118,7 +117,7 @@ namespace Business.Config
         /// <param name="user">Usuario que realiza la eliminación</param>
         /// <returns>Parámetro eliminado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al eliminar el parámetro</exception>
-        public override Parameter Delete(Parameter entity, User user)
+        public Parameter Delete(Parameter entity, User user)
         {
             try
             {
