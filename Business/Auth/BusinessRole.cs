@@ -9,7 +9,7 @@ namespace Business.Auth
     /// <summary>
     /// Realiza la persistencia de los roles en la base de datos
     /// </summary>
-    public class BusinessRole : BusinessBase<Role>, IPersistentRole
+    public class BusinessRole : BusinessBase<Role>, IBusinessRole
     {
         #region Constructors
         /// <summary>
