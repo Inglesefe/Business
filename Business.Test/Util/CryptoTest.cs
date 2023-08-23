@@ -40,6 +40,17 @@ namespace Business.Test.Util
 
             Assert.Equal("Prueba123", plainText);
         }
+
+        /// <summary>
+        /// Prueba la encripción de una cadena de caracteres
+        /// </summary>
+        [Fact]
+        public void EncryptTest()
+        {
+            string cryptedText = Crypto.Encrypt("Prueba123", _configuration["Aes:Key"] ?? "", _configuration["Aes:IV"] ?? "");
+
+            Assert.Equal("FLWnwyoEz/7tYsnS+vxTVg==", cryptedText);
+        }
         #endregion
     }
 }
