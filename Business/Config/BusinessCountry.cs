@@ -10,7 +10,7 @@ namespace Business.Config
     /// <summary>
     /// Realiza la persistencia de los paises en la base de datos
     /// </summary>
-    public class BusinessCountry : BusinessBase<Country>
+    public class BusinessCountry : BusinessBase<Country>, IBusiness<Country>
     {
         #region Constructors
         /// <summary>

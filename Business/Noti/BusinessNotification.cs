@@ -13,7 +13,7 @@ namespace Business.Noti
     /// <summary>
     /// Capa de negocio de las notificaciones en la base de datos
     /// </summary>
-    public class BusinessNotification : BusinessBase<Notification>
+    public class BusinessNotification : BusinessBase<Notification>, IBusiness<Notification>
     {
         #region Attributes
         /// <summary>

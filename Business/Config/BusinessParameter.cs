@@ -10,7 +10,7 @@ namespace Business.Config
     /// <summary>
     /// Realiza la persistencia de los parámetros en la base de datos
     /// </summary>
-    public class BusinessParameter : BusinessBase<Parameter>
+    public class BusinessParameter : BusinessBase<Parameter>, IBusiness<Parameter>
     {
         #region Constructors
         /// <summary>
