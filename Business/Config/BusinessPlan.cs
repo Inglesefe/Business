@@ -10,7 +10,7 @@ namespace Business.Config
     /// <summary>
     /// Realiza la persistencia de los planes en la base de datos
     /// </summary>
-    public class BusinessPlan : BusinessBase<Plan>
+    public class BusinessPlan : BusinessBase<Plan>, IBusiness<Plan>
     {
         #region Constructors
         /// <summary>

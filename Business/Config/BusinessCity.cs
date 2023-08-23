@@ -10,7 +10,7 @@ namespace Business.Config
     /// <summary>
     /// Realiza la persistencia de las ciudades en la base de datos
     /// </summary>
-    public class BusinessCity : BusinessBase<City>
+    public class BusinessCity : BusinessBase<City>, IBusiness<City>
     {
         #region Constructors
         /// <summary>

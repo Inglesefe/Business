@@ -10,7 +10,7 @@ namespace Business.Config
     /// <summary>
     /// Realiza la persistencia de los tipos de identificación en la base de datos
     /// </summary>
-    public class BusinessIdentificationType : BusinessBase<IdentificationType>
+    public class BusinessIdentificationType : BusinessBase<IdentificationType>, IBusiness<IdentificationType>
     {
         #region Constructors
         /// <summary>

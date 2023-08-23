@@ -10,7 +10,7 @@ namespace Business.Config
     /// <summary>
     /// Realiza la persistencia de los tipos de ingreso en la base de datos
     /// </summary>
-    public class BusinessIncomeType : BusinessBase<IncomeType>
+    public class BusinessIncomeType : BusinessBase<IncomeType>, IBusiness<IncomeType>
     {
         #region Constructors
         /// <summary>

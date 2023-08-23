@@ -10,7 +10,7 @@ namespace Business.Noti
     /// <summary>
     /// Capa de negocio de las plantillas en la base de datos
     /// </summary>
-    public class BusinessTemplate : BusinessBase<Template>
+    public class BusinessTemplate : BusinessBase<Template>, IBusiness<Template>
     {
         #region Constructors
         /// <summary>
