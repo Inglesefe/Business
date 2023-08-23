@@ -10,7 +10,7 @@ namespace Business.Auth
     /// <summary>
     /// Lógica aplicada a los usuarios del módulo de autenticación y autorización
     /// </summary>
-    public class BusinessUser : BusinessBase<User>
+    public class BusinessUser : BusinessBase<User>, IBusinessUser
     {
         #region Constructors
         /// <summary>
