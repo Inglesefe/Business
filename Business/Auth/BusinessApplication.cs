@@ -9,7 +9,7 @@ namespace Business.Auth
     /// <summary>
     /// Realiza la persistencia de las aplicaciones en la base de datos
     /// </summary>
-    public class BusinessApplication : BusinessBase<Application>
+    public class BusinessApplication : BusinessBase<Application>, IBusinessApplication
     {
         #region Constructors
         /// <summary>

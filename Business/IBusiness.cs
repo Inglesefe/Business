@@ -4,6 +4,10 @@ using Entities.Auth;
 
 namespace Business
 {
+    /// <summary>
+    /// Define los métodos que debe tener toda capa de negocio
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public interface IBusiness<T> where T : EntityBase
     {
         #region Methods
