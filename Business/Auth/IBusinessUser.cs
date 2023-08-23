@@ -4,7 +4,7 @@ using Entities.Auth;
 
 namespace Business.Auth
 {
-    internal interface IBusinessUser : IBusiness<User>
+    public interface IBusinessUser : IBusiness<User>
     {
         #region Methods
         /// <summary>
