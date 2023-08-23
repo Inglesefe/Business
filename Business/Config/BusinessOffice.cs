@@ -10,7 +10,7 @@ namespace Business.Config
     /// <summary>
     /// Realiza la persistencia de las oficinas en la base de datos
     /// </summary>
-    public class BusinessOffice : BusinessBase<Office>
+    public class BusinessOffice : BusinessBase<Office>, IBusiness<Office>
     {
         #region Constructors
         /// <summary>
