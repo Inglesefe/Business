@@ -32,8 +32,8 @@ namespace Business.Test.Noti
             List<Template> templates = new()
             {
                 new Template() { Id = 1, Name = "Plantilla de prueba", Content = "<h1>Esta es una prueba hecha por #{user}#</h1>" },
-                new Template() { Id = 1, Name = "Plantilla a actualizar", Content = "<h1>Esta es una prueba hecha para #{actualizar}#</h1>" },
-                new Template() { Id = 1, Name = "Plantilla a eliminar", Content = "<h1>Esta es una prueba hecha para #{eliminar}#</h1>" }
+                new Template() { Id = 2, Name = "Plantilla a actualizar", Content = "<h1>Esta es una prueba hecha para #{actualizar}#</h1>" },
+                new Template() { Id = 3, Name = "Plantilla a eliminar", Content = "<h1>Esta es una prueba hecha para #{eliminar}#</h1>" }
             };
 
             mock.Setup(p => p.List("idtemplate = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))

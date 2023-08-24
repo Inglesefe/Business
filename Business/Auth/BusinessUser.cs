@@ -22,122 +22,6 @@ namespace Business.Auth
 
         #region Methods
         /// <summary>
-        /// Trae un listado de usuarios desde la base de datos
-        /// </summary>
-        /// <param name="filters">Filtros aplicados a la consulta</param>
-        /// <param name="orders">Ordenamientos aplicados a la base de datos</param>
-        /// <param name="limit">Límite de registros a traer</param>
-        /// <param name="offset">Corrimiento desde el que se cuenta el número de registros</param>
-        /// <returns>Listado de usuarios</returns>
-        /// <exception cref="BusinessException">Si hubo una excepción al consultar los usuarios</exception>
-        public ListResult<User> List(string filters, string orders, int limit, int offset)
-        {
-            try
-            {
-                return _persistent.List(filters, orders, limit, offset);
-            }
-            catch (PersistentException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                throw new BusinessException("Error al consultar el listado de usuarios", ex);
-            }
-        }
-
-        /// <summary>
-        /// Consulta un usuario dado su identificador
-        /// </summary>
-        /// <param name="entity">Usuario a consultar</param>
-        /// <returns>Usuario con los datos cargados desde la base de datos o null si no lo pudo encontrar</returns>
-        /// <exception cref="BusinessException">Si hubo una excepción al consultar los usuarios</exception>
-        public User Read(User entity)
-        {
-            try
-            {
-                return _persistent.Read(entity);
-            }
-            catch (PersistentException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                throw new BusinessException("Error al consultar el usuario", ex);
-            }
-        }
-
-        /// <summary>
-        /// Inserta un usuario en la base de datos
-        /// </summary>
-        /// <param name="entity">Usuario a insertar</param>
-        /// <param name="user">Usuario que realiza la inserción</param>
-        /// <returns>Usuario insertado con el id generado por la base de datos</returns>
-        /// <exception cref="BusinessException">Si hubo una excepción al insertar el usuario</exception>
-        public User Insert(User entity, User user)
-        {
-            try
-            {
-                return _persistent.Insert(entity, user);
-            }
-            catch (PersistentException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                throw new BusinessException("Error al insertar el usuario", ex);
-            }
-        }
-
-        /// <summary>
-        /// Actualiza un usuario en la base de datos
-        /// </summary>
-        /// <param name="entity">Usuario a actualizar</param>
-        /// <param name="user">Usuario que realiza la actualización</param>
-        /// <returns>Usuario actualizado</returns>
-        /// <exception cref="BusinessException">Si hubo una excepción al actualizar el usuario</exception>
-        public User Update(User entity, User user)
-        {
-            try
-            {
-                return _persistent.Update(entity, user);
-            }
-            catch (PersistentException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                throw new BusinessException("Error al actualizar el usuario", ex);
-            }
-        }
-
-        /// <summary>
-        /// Elimina un usuario de la base de datos
-        /// </summary>
-        /// <param name="entity">Usuario a eliminar</param>
-        /// <param name="user">Usuario que realiza la eliminación</param>
-        /// <returns>Usuario eliminado</returns>
-        /// <exception cref="BusinessException">Si hubo una excepción al eliminar el usuario</exception>
-        public User Delete(User entity, User user)
-        {
-            try
-            {
-                return _persistent.Delete(entity, user);
-            }
-            catch (PersistentException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                throw new BusinessException("Error al eliminar el usuario", ex);
-            }
-        }
-
-        /// <summary>
         /// Consulta un usuario dado su login y contraseña
         /// </summary>
         /// <param name="entity">Usuario a consultar</param>
@@ -158,7 +42,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error al consultar el usuario", ex);
+                throw new BusinessException("Error at get an user", ex);
             }
         }
 
@@ -180,7 +64,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error al consultar el usuario", ex);
+                throw new BusinessException("Error at get an user", ex);
             }
         }
 
@@ -206,7 +90,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error al actualizar el usuario", ex);
+                throw new BusinessException("Error at update password of an user", ex);
             }
         }
 
@@ -232,7 +116,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error al consultar el listado de roles asignados al usuario", ex);
+                throw new BusinessException("Error at get roles related with an user", ex);
             }
         }
 
@@ -258,7 +142,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error al consultar el listado de roles no asignados al usuario", ex);
+                throw new BusinessException("Error at get roles not related with an user", ex);
             }
         }
 
@@ -282,7 +166,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error al asignar el rol al usuario", ex);
+                throw new BusinessException("Error at insert role related with an user", ex);
             }
         }
 
@@ -306,7 +190,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error al eliminar el rol del usuario", ex);
+                throw new BusinessException("Error at delete role related with an user", ex);
             }
         }
         #endregion
