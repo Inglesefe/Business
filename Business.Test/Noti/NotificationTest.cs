@@ -44,15 +44,10 @@ namespace Business.Test.Noti
                 .AddEnvironmentVariables()
                 .Build();
             Mock<IPersistentWithLog<Notification>> mock = new();
-            Mock<IPersistentWithLog<Template>> mockTemplate = new();
 
             List<Notification> notifications = new()
             {
                 new Notification() { Id = 1, Date = DateTime.Now, To = "leandrobaena@gmail.com", Subject = "Correo de prueba", Content = "<h1>Esta es una prueba hecha por leandrobaena@gmail.com</h1>", User = 1 }
-            };
-            List<Template> templates = new()
-            {
-                new Template() { Id = 1, Name = "Plantilla de prueba", Content = "<h1>Esta es una prueba hecha por #{user}#</h1>" }
             };
 
             mock.Setup(p => p.List("idnotification = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
@@ -71,11 +66,7 @@ namespace Business.Test.Noti
                     return notification;
                 });
 
-            mockTemplate.Setup(p => p.Read(It.IsAny<Template>()))
-                .Returns((Template template) => templates.Find(x => x.Id == template.Id) ?? new Template());
-
-
-            _business = new(mock.Object, mockTemplate.Object);
+            _business = new(mock.Object);
 
             _smtpConfig = new SmtpConfig()
             {
@@ -150,25 +141,6 @@ namespace Business.Test.Noti
             notification = _business.Insert(notification, new() { Id = 1 });
 
             Assert.NotEqual(0, notification.Id);
-        }
-
-        /// <summary>
-        /// Prueba el reemplazo de las variables en el contenido de la notificación
-        /// </summary>
-        /// <returns>N/A</returns>
-        [Fact]
-        public void NotificationReplacedVariablesTest()
-        {
-            Notification notification = new();
-            Template template = new() { Id = 1 };
-            IDictionary<string, string> data = new Dictionary<string, string>
-            {
-                { "user", "leandrobaena@gmail.com" }
-            };
-
-            notification = _business.ReplacedVariables(notification, template, data);
-
-            Assert.Equal("<h1>Esta es una prueba hecha por leandrobaena@gmail.com</h1>", notification.Content);
         }
 
         /// <summary>
