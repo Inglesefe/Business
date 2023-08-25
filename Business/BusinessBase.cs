@@ -4,6 +4,7 @@ using Dal.Dto;
 using Dal.Exceptions;
 using Entities;
 using Entities.Auth;
+using System.Data;
 
 namespace Business
 {
@@ -40,13 +41,14 @@ namespace Business
         /// <param name="orders">Ordenamientos aplicados a la base de datos</param>
         /// <param name="limit">Límite de registros a traer</param>
         /// <param name="offset">Corrimiento desde el que se cuenta el número de registros</param>
+        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Listado de entidades</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar las entidades</exception>
-        public ListResult<T> List(string filters, string orders, int limit, int offset)
+        public ListResult<T> List(string filters, string orders, int limit, int offset, IDbConnection connection)
         {
             try
             {
-                return _persistent.List(filters, orders, limit, offset);
+                return _persistent.List(filters, orders, limit, offset, connection);
             }
             catch (PersistentException)
             {
@@ -62,13 +64,14 @@ namespace Business
         /// Consulta una entidad dado su identificador
         /// </summary>
         /// <param name="entity">Entidad a consultar</param>
+        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Entidad con los datos cargados desde la base de datos o por defecto si no lo pudo encontrar</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar la entidad</exception>
-        public T Read(T entity)
+        public T Read(T entity, IDbConnection connection)
         {
             try
             {
-                return _persistent.Read(entity);
+                return _persistent.Read(entity, connection);
             }
             catch (Exception ex)
             {
@@ -80,14 +83,15 @@ namespace Business
         /// Inserta una entidad en la base de datos
         /// </summary>
         /// <param name="entity">Entidad a insertar</param>
-        /// <returns>Entidad insertada con el id generado por la base de datos</returns>
         /// <param name="user">Usuario que realiza la inserción</param>
+        /// <param name="connection">Conexión a la base de datos</param>
+        /// <returns>Entidad insertada con el id generado por la base de datos</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al insertar la entidad</exception>
-        public T Insert(T entity, User user)
+        public T Insert(T entity, User user, IDbConnection connection)
         {
             try
             {
-                return _persistent.Insert(entity, user);
+                return _persistent.Insert(entity, user, connection);
             }
             catch (PersistentException)
             {
@@ -104,13 +108,14 @@ namespace Business
         /// </summary>
         /// <param name="entity">Entidad a actualizar</param>
         /// <param name="user">Usuario que realiza la actualización</param>
+        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Entidad actualizada</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al actualizar la entidad</exception>
-        public T Update(T entity, User user)
+        public T Update(T entity, User user, IDbConnection connection)
         {
             try
             {
-                return _persistent.Update(entity, user);
+                return _persistent.Update(entity, user, connection);
             }
             catch (PersistentException)
             {
@@ -127,13 +132,14 @@ namespace Business
         /// </summary>
         /// <param name="entity">Entidad a eliminar</param>
         /// <param name="user">Usuario que realiza la eliminación</param>
+        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Entidad eliminada</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al eliminar la entidad</exception>
-        public T Delete(T entity, User user)
+        public T Delete(T entity, User user, IDbConnection connection)
         {
             try
             {
-                return _persistent.Delete(entity, user);
+                return _persistent.Delete(entity, user, connection);
             }
             catch (PersistentException)
             {

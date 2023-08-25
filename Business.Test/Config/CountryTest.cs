@@ -5,6 +5,7 @@ using Dal.Exceptions;
 using Entities.Auth;
 using Entities.Config;
 using Moq;
+using System.Data;
 
 namespace Business.Test.Config
 {
@@ -19,6 +20,11 @@ namespace Business.Test.Config
         /// Capa de negocio de los paises
         /// </summary>
         private readonly BusinessCountry _business;
+
+        /// <summary>
+        /// Conexión a la base de datos falsa
+        /// </summary>
+        private readonly IDbConnection connectionFake;
         #endregion
 
         #region Constructors
@@ -28,6 +34,8 @@ namespace Business.Test.Config
         public CountryTest()
         {
             Mock<IPersistentWithLog<Country>> mock = new();
+            Mock<IDbConnection> mockConnection = new();
+            connectionFake = mockConnection.Object;
 
             List<Country> countries = new()
             {
@@ -36,16 +44,16 @@ namespace Business.Test.Config
                 new Country() { Id = 3, Code = "EN", Name = "Inglaterra" }
             };
 
-            mock.Setup(p => p.List("idcountry = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            mock.Setup(p => p.List("idcountry = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
                 .Returns(new ListResult<Country>(countries.Where(y => y.Id == 1).ToList(), 1));
-            mock.Setup(p => p.List("idpais = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            mock.Setup(p => p.List("idpais = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
                 .Throws<PersistentException>();
 
-            mock.Setup(p => p.Read(It.IsAny<Country>()))
-                .Returns((Country country) => countries.Find(x => x.Id == country.Id) ?? new Country());
+            mock.Setup(p => p.Read(It.IsAny<Country>(), It.IsAny<IDbConnection>()))
+                .Returns((Country country, IDbConnection connection) => countries.Find(x => x.Id == country.Id) ?? new Country());
 
-            mock.Setup(p => p.Insert(It.IsAny<Country>(), It.IsAny<User>()))
-                .Returns((Country country, User user) =>
+            mock.Setup(p => p.Insert(It.IsAny<Country>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((Country country, User user, IDbConnection connection) =>
                 {
                     if (countries.Exists(x => x.Code == country.Code))
                     {
@@ -59,15 +67,15 @@ namespace Business.Test.Config
                     }
                 });
 
-            mock.Setup(p => p.Update(It.IsAny<Country>(), It.IsAny<User>()))
-                .Returns((Country country, User user) =>
+            mock.Setup(p => p.Update(It.IsAny<Country>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((Country country, User user, IDbConnection connection) =>
                 {
                     countries.Where(x => x.Id == country.Id).ToList().ForEach(x => x.Code = country.Code);
                     return country;
                 });
 
-            mock.Setup(p => p.Delete(It.IsAny<Country>(), It.IsAny<User>()))
-                .Returns((Country city, User user) =>
+            mock.Setup(p => p.Delete(It.IsAny<Country>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((Country city, User user, IDbConnection connection) =>
                 {
                     countries = countries.Where(x => x.Id != city.Id).ToList();
                     return city;
@@ -84,7 +92,7 @@ namespace Business.Test.Config
         [Fact]
         public void CountryListTest()
         {
-            ListResult<Country> list = _business.List("idcountry = 1", "name", 1, 0);
+            ListResult<Country> list = _business.List("idcountry = 1", "name", 1, 0, connectionFake);
 
             Assert.NotEmpty(list.List);
             Assert.True(list.Total > 0);
@@ -96,7 +104,7 @@ namespace Business.Test.Config
         [Fact]
         public void CountryListWithErrorTest()
         {
-            Assert.Throws<PersistentException>(() => _business.List("idpais = 1", "name", 1, 0));
+            Assert.Throws<PersistentException>(() => _business.List("idpais = 1", "name", 1, 0, connectionFake));
         }
 
         /// <summary>
@@ -106,7 +114,7 @@ namespace Business.Test.Config
         public void CountryReadTest()
         {
             Country country = new() { Id = 1 };
-            country = _business.Read(country);
+            country = _business.Read(country, connectionFake);
 
             Assert.Equal("CO", country.Code);
         }
@@ -118,7 +126,7 @@ namespace Business.Test.Config
         public void CountryReadNotFoundTest()
         {
             Country country = new() { Id = 10 };
-            country = _business.Read(country);
+            country = _business.Read(country, connectionFake);
 
             Assert.Equal(0, country.Id);
         }
@@ -130,7 +138,7 @@ namespace Business.Test.Config
         public void CountryInsertTest()
         {
             Country country = new() { Code = "PR", Name = "Puerto Rico" };
-            country = _business.Insert(country, new() { Id = 1 });
+            country = _business.Insert(country, new() { Id = 1 }, connectionFake);
 
             Assert.NotEqual(0, country.Id);
         }
@@ -144,7 +152,7 @@ namespace Business.Test.Config
         {
             Country country = new() { Code = "CO", Name = "Colombia" };
 
-            _ = Assert.Throws<PersistentException>(() => _business.Insert(country, new() { Id = 1 }));
+            _ = Assert.Throws<PersistentException>(() => _business.Insert(country, new() { Id = 1 }, connectionFake));
         }
 
         /// <summary>
@@ -154,10 +162,10 @@ namespace Business.Test.Config
         public void CountryUpdateTest()
         {
             Country country = new() { Id = 2, Code = "PE", Name = "Perú" };
-            _ = _business.Update(country, new() { Id = 1 });
+            _ = _business.Update(country, new() { Id = 1 }, connectionFake);
 
             Country country2 = new() { Id = 2 };
-            country2 = _business.Read(country2);
+            country2 = _business.Read(country2, connectionFake);
 
             Assert.NotEqual("US", country2.Code);
         }
@@ -169,10 +177,10 @@ namespace Business.Test.Config
         public void CountryDeleteTest()
         {
             Country country = new() { Id = 3 };
-            _ = _business.Delete(country, new() { Id = 1 });
+            _ = _business.Delete(country, new() { Id = 1 }, connectionFake);
 
             Country country2 = new() { Id = 3 };
-            country2 = _business.Read(country2);
+            country2 = _business.Read(country2, connectionFake);
 
             Assert.Equal(0, country2.Id);
         }

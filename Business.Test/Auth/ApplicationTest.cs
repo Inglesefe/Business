@@ -4,6 +4,7 @@ using Dal.Dto;
 using Dal.Exceptions;
 using Entities.Auth;
 using Moq;
+using System.Data;
 
 namespace Business.Test.Auth
 {
@@ -18,6 +19,11 @@ namespace Business.Test.Auth
         /// Capa de negocio de las aplicaciones usando la interfaz IPersistenceWithLog
         /// </summary>
         private readonly BusinessApplication _business;
+
+        /// <summary>
+        /// Conexión a la base de datos falsa
+        /// </summary>
+        private readonly IDbConnection connectionFake;
         #endregion
 
         #region Constructors
@@ -27,6 +33,8 @@ namespace Business.Test.Auth
         public ApplicationTest()
         {
             Mock<IPersistentApplication> mock = new();
+            Mock<IDbConnection> mockConnection = new();
+            connectionFake = mockConnection.Object;
 
             List<Application> apps = new()
             {
@@ -49,16 +57,16 @@ namespace Business.Test.Auth
                 new Tuple<Application, Role>(apps[1], roles[1])
             };
 
-            mock.Setup(p => p.List("idapplication = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            mock.Setup(p => p.List("idapplication = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
                 .Returns(new ListResult<Application>(apps.Where(y => y.Id == 1).ToList(), 1));
-            mock.Setup(p => p.List("idaplicacion = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            mock.Setup(p => p.List("idaplicacion = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
                 .Throws<PersistentException>();
 
-            mock.Setup(p => p.Read(It.IsAny<Application>()))
-                .Returns((Application app) => apps.Find(x => x.Id == app.Id) ?? new Application());
+            mock.Setup(p => p.Read(It.IsAny<Application>(), It.IsAny<IDbConnection>()))
+                .Returns((Application app, IDbConnection connection) => apps.Find(x => x.Id == app.Id) ?? new Application());
 
-            mock.Setup(p => p.Insert(It.IsAny<Application>(), It.IsAny<User>()))
-                .Returns((Application app, User user) =>
+            mock.Setup(p => p.Insert(It.IsAny<Application>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((Application app, User user, IDbConnection connection) =>
                 {
                     if (apps.Exists(x => x.Name == app.Name))
                     {
@@ -72,38 +80,38 @@ namespace Business.Test.Auth
                     }
                 });
 
-            mock.Setup(p => p.Update(It.IsAny<Application>(), It.IsAny<User>()))
-                .Returns((Application app, User user) =>
+            mock.Setup(p => p.Update(It.IsAny<Application>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((Application app, User user, IDbConnection connection) =>
                 {
                     apps.Where(x => x.Id == app.Id).ToList().ForEach(x => x.Name = app.Name);
                     return app;
                 });
 
-            mock.Setup(p => p.Delete(It.IsAny<Application>(), It.IsAny<User>()))
-                .Returns((Application app, User user) =>
+            mock.Setup(p => p.Delete(It.IsAny<Application>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((Application app, User user, IDbConnection connection) =>
                 {
                     apps = apps.Where(x => x.Id != app.Id).ToList();
                     return app;
                 });
 
-            mock.Setup(p => p.ListRoles("", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Application>()))
+            mock.Setup(p => p.ListRoles("", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Application>(), It.IsAny<IDbConnection>()))
                 .Returns(new ListResult<Role>(apps_roles.Where(x => x.Item1.Id == 1).Select(x => x.Item2).ToList(), 1));
 
-            mock.Setup(p => p.ListRoles("r.idrole = 2", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Application>()))
+            mock.Setup(p => p.ListRoles("r.idrole = 2", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Application>(), It.IsAny<IDbConnection>()))
                 .Returns(new ListResult<Role>(new List<Role>(), 0));
 
-            mock.Setup(p => p.ListRoles("idaplicación = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Application>()))
+            mock.Setup(p => p.ListRoles("idaplicación = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Application>(), It.IsAny<IDbConnection>()))
                 .Throws<PersistentException>();
 
-            mock.Setup(p => p.ListNotRoles(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Application>()))
-                .Returns((string filters, string orders, int limit, int offset, Application app) =>
+            mock.Setup(p => p.ListNotRoles(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Application>(), It.IsAny<IDbConnection>()))
+                .Returns((string filters, string orders, int limit, int offset, Application app, IDbConnection connection) =>
                 {
                     List<Role> result = roles.Where(x => !apps_roles.Exists(y => y.Item1.Id == app.Id && y.Item2.Id == x.Id)).ToList();
                     return new ListResult<Role>(result, result.Count);
                 });
 
-            mock.Setup(p => p.InsertRole(It.IsAny<Role>(), It.IsAny<Application>(), It.IsAny<User>())).
-                Returns((Role role, Application app, User user) =>
+            mock.Setup(p => p.InsertRole(It.IsAny<Role>(), It.IsAny<Application>(), It.IsAny<User>(), It.IsAny<IDbConnection>())).
+                Returns((Role role, Application app, User user, IDbConnection connection) =>
                 {
                     if (apps_roles.Exists(x => x.Item1.Id == app.Id && x.Item2.Id == role.Id))
                     {
@@ -127,7 +135,7 @@ namespace Business.Test.Auth
         [Fact]
         public void ApplicationListTest()
         {
-            ListResult<Application> list = _business.List("idapplication = 1", "name", 1, 0);
+            ListResult<Application> list = _business.List("idapplication = 1", "name", 1, 0, connectionFake);
 
             Assert.NotEmpty(list.List);
             Assert.True(list.Total > 0);
@@ -139,7 +147,7 @@ namespace Business.Test.Auth
         [Fact]
         public void ApplicationListWithErrorTest()
         {
-            Assert.Throws<PersistentException>(() => _business.List("idaplicacion = 1", "name", 1, 0));
+            Assert.Throws<PersistentException>(() => _business.List("idaplicacion = 1", "name", 1, 0, connectionFake));
         }
 
         /// <summary>
@@ -149,7 +157,7 @@ namespace Business.Test.Auth
         public void ApplicationReadTest()
         {
             Application application = new() { Id = 1 };
-            application = _business.Read(application);
+            application = _business.Read(application, connectionFake);
 
             Assert.Equal("Autenticación", application.Name);
         }
@@ -161,7 +169,7 @@ namespace Business.Test.Auth
         public void ApplicationReadNotFoundTest()
         {
             Application application = new() { Id = 10 };
-            application = _business.Read(application);
+            application = _business.Read(application, connectionFake);
 
             Assert.Equal(0, application.Id);
         }
@@ -173,7 +181,7 @@ namespace Business.Test.Auth
         public void ApplicationInsertTest()
         {
             Application application = new() { Name = "Prueba 1" };
-            application = _business.Insert(application, new() { Id = 1 });
+            application = _business.Insert(application, new() { Id = 1 }, connectionFake);
 
             Assert.NotEqual(0, application.Id);
         }
@@ -186,7 +194,7 @@ namespace Business.Test.Auth
         {
             Application application = new() { Name = "Autenticación" };
 
-            _ = Assert.Throws<PersistentException>(() => _business.Insert(application, new() { Id = 1 }));
+            _ = Assert.Throws<PersistentException>(() => _business.Insert(application, new() { Id = 1 }, connectionFake));
         }
 
         /// <summary>
@@ -196,10 +204,10 @@ namespace Business.Test.Auth
         public void ApplicationUpdateTest()
         {
             Application application = new() { Id = 2, Name = "Prueba actualizar" };
-            _ = _business.Update(application, new() { Id = 1 });
+            _ = _business.Update(application, new() { Id = 1 }, connectionFake);
 
             Application application2 = new() { Id = 2 };
-            application2 = _business.Read(application2);
+            application2 = _business.Read(application2, connectionFake);
 
             Assert.NotEqual("Actualizame", application2.Name);
         }
@@ -211,10 +219,10 @@ namespace Business.Test.Auth
         public void ApplicationDeleteTest()
         {
             Application application = new() { Id = 3 };
-            _ = _business.Delete(application, new() { Id = 1 });
+            _ = _business.Delete(application, new() { Id = 1 }, connectionFake);
 
             Application application2 = new() { Id = 3 };
-            application2 = _business.Read(application2);
+            application2 = _business.Read(application2, connectionFake);
 
             Assert.Equal(0, application2.Id);
         }
@@ -224,7 +232,7 @@ namespace Business.Test.Auth
         [Fact]
         public void ApplicationListRolesTest()
         {
-            ListResult<Role> list = _business.ListRoles("", "", 10, 0, new() { Id = 1 });
+            ListResult<Role> list = _business.ListRoles("", "", 10, 0, new() { Id = 1 }, connectionFake);
 
             Assert.NotEmpty(list.List);
             Assert.True(list.Total > 0);
@@ -236,7 +244,7 @@ namespace Business.Test.Auth
         [Fact]
         public void ApplicationListRolesWithErrorTest()
         {
-            _ = Assert.Throws<PersistentException>(() => _business.ListRoles("idaplicación = 1", "name", 10, 0, new() { Id = 1 }));
+            _ = Assert.Throws<PersistentException>(() => _business.ListRoles("idaplicación = 1", "name", 10, 0, new() { Id = 1 }, connectionFake));
         }
 
         /// <summary>
@@ -245,7 +253,7 @@ namespace Business.Test.Auth
         [Fact]
         public void ApplicationListNotRolesTest()
         {
-            ListResult<Role> list = _business.ListNotRoles("", "", 10, 0, new() { Id = 1 });
+            ListResult<Role> list = _business.ListNotRoles("", "", 10, 0, new() { Id = 1 }, connectionFake);
 
             Assert.NotEmpty(list.List);
             Assert.True(list.Total > 0);
@@ -257,7 +265,7 @@ namespace Business.Test.Auth
         [Fact]
         public void ApplicationInsertRoleTest()
         {
-            Role role = _business.InsertRole(new() { Id = 4 }, new() { Id = 1 }, new() { Id = 1 });
+            Role role = _business.InsertRole(new() { Id = 4 }, new() { Id = 1 }, new() { Id = 1 }, connectionFake);
 
             Assert.NotNull(role);
         }
@@ -268,7 +276,7 @@ namespace Business.Test.Auth
         [Fact]
         public void ApplicationInsertRoleDuplicateTest()
         {
-            _ = Assert.Throws<PersistentException>(() => _business.InsertRole(new() { Id = 1 }, new() { Id = 1 }, new() { Id = 1 }));
+            _ = Assert.Throws<PersistentException>(() => _business.InsertRole(new() { Id = 1 }, new() { Id = 1 }, new() { Id = 1 }, connectionFake));
         }
 
         /// <summary>
@@ -277,8 +285,8 @@ namespace Business.Test.Auth
         [Fact]
         public void ApplicationDeleteRoleTest()
         {
-            _ = _business.DeleteRole(new() { Id = 2 }, new() { Id = 1 }, new() { Id = 1 });
-            ListResult<Role> list = _business.ListRoles("r.idrole = 2", "", 10, 0, new() { Id = 1 });
+            _ = _business.DeleteRole(new() { Id = 2 }, new() { Id = 1 }, new() { Id = 1 }, connectionFake);
+            ListResult<Role> list = _business.ListRoles("r.idrole = 2", "", 10, 0, new() { Id = 1 }, connectionFake);
 
             Assert.Equal(0, list.Total);
         }

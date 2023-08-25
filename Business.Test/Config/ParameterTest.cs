@@ -5,6 +5,7 @@ using Dal.Exceptions;
 using Entities.Auth;
 using Entities.Config;
 using Moq;
+using System.Data;
 
 namespace Business.Test.Config
 {
@@ -19,6 +20,11 @@ namespace Business.Test.Config
         /// Capa de negocio de los parámetros
         /// </summary>
         private readonly BusinessParameter _business;
+
+        /// <summary>
+        /// Conexión a la base de datos falsa
+        /// </summary>
+        private readonly IDbConnection connectionFake;
         #endregion
 
         #region Constructors
@@ -28,6 +34,8 @@ namespace Business.Test.Config
         public ParameterTest()
         {
             Mock<IPersistentWithLog<Parameter>> mock = new();
+            Mock<IDbConnection> mockConnection = new();
+            connectionFake = mockConnection.Object;
 
             List<Parameter> parameters = new()
             {
@@ -36,16 +44,16 @@ namespace Business.Test.Config
                 new Parameter() { Id = 3, Name = "Parámetro 3", Value = "Valor 3" }
             };
 
-            mock.Setup(p => p.List("idparameter = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            mock.Setup(p => p.List("idparameter = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
                 .Returns(new ListResult<Parameter>(parameters.Where(y => y.Id == 1).ToList(), 1));
-            mock.Setup(p => p.List("idparametro = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            mock.Setup(p => p.List("idparametro = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
                 .Throws<PersistentException>();
 
-            mock.Setup(p => p.Read(It.IsAny<Parameter>()))
-                .Returns((Parameter parameter) => parameters.Find(x => x.Id == parameter.Id) ?? new Parameter());
+            mock.Setup(p => p.Read(It.IsAny<Parameter>(), It.IsAny<IDbConnection>()))
+                .Returns((Parameter parameter, IDbConnection connection) => parameters.Find(x => x.Id == parameter.Id) ?? new Parameter());
 
-            mock.Setup(p => p.Insert(It.IsAny<Parameter>(), It.IsAny<User>()))
-                .Returns((Parameter parameter, User user) =>
+            mock.Setup(p => p.Insert(It.IsAny<Parameter>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((Parameter parameter, User user, IDbConnection connection) =>
                 {
                     if (parameters.Exists(x => x.Name == parameter.Name))
                     {
@@ -59,15 +67,15 @@ namespace Business.Test.Config
                     }
                 });
 
-            mock.Setup(p => p.Update(It.IsAny<Parameter>(), It.IsAny<User>()))
-                .Returns((Parameter parameter, User user) =>
+            mock.Setup(p => p.Update(It.IsAny<Parameter>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((Parameter parameter, User user, IDbConnection connection) =>
                 {
                     parameters.Where(x => x.Id == parameter.Id).ToList().ForEach(x => x.Name = parameter.Name);
                     return parameter;
                 });
 
-            mock.Setup(p => p.Delete(It.IsAny<Parameter>(), It.IsAny<User>()))
-                .Returns((Parameter parameter, User user) =>
+            mock.Setup(p => p.Delete(It.IsAny<Parameter>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((Parameter parameter, User user, IDbConnection connection) =>
                 {
                     parameters = parameters.Where(x => x.Id != parameter.Id).ToList();
                     return parameter;
@@ -84,7 +92,7 @@ namespace Business.Test.Config
         [Fact]
         public void ParameterListTest()
         {
-            ListResult<Parameter> list = _business.List("idparameter = 1", "name", 1, 0);
+            ListResult<Parameter> list = _business.List("idparameter = 1", "name", 1, 0, connectionFake);
 
             Assert.NotEmpty(list.List);
             Assert.True(list.Total > 0);
@@ -96,7 +104,7 @@ namespace Business.Test.Config
         [Fact]
         public void ParameterListWithErrorTest()
         {
-            Assert.Throws<PersistentException>(() => _business.List("idparametro = 1", "name", 1, 0));
+            Assert.Throws<PersistentException>(() => _business.List("idparametro = 1", "name", 1, 0, connectionFake));
         }
 
         /// <summary>
@@ -106,7 +114,7 @@ namespace Business.Test.Config
         public void ParameterReadTest()
         {
             Parameter parameter = new() { Id = 1 };
-            parameter = _business.Read(parameter);
+            parameter = _business.Read(parameter, connectionFake);
 
             Assert.Equal("Parámetro 1", parameter.Name);
         }
@@ -118,7 +126,7 @@ namespace Business.Test.Config
         public void ParameterReadNotFoundTest()
         {
             Parameter parameter = new() { Id = 10 };
-            parameter = _business.Read(parameter);
+            parameter = _business.Read(parameter, connectionFake);
 
             Assert.Equal(0, parameter.Id);
         }
@@ -130,7 +138,7 @@ namespace Business.Test.Config
         public void ParameterInsertTest()
         {
             Parameter parameter = new() { Name = "Parametro 4", Value = "Valor 4" };
-            parameter = _business.Insert(parameter, new() { Id = 1 });
+            parameter = _business.Insert(parameter, new() { Id = 1 }, connectionFake);
 
             Assert.NotEqual(0, parameter.Id);
         }
@@ -144,7 +152,7 @@ namespace Business.Test.Config
         {
             Parameter parameter = new() { Name = "Parámetro 1", Value = "Valor 5" };
 
-            _ = Assert.Throws<PersistentException>(() => _business.Insert(parameter, new() { Id = 1 }));
+            _ = Assert.Throws<PersistentException>(() => _business.Insert(parameter, new() { Id = 1 }, connectionFake));
         }
 
         /// <summary>
@@ -154,10 +162,10 @@ namespace Business.Test.Config
         public void ParameterUpdateTest()
         {
             Parameter parameter = new() { Id = 2, Name = "Parámetro 6", Value = "Valor 6" };
-            _ = _business.Update(parameter, new() { Id = 1 });
+            _ = _business.Update(parameter, new() { Id = 1 }, connectionFake);
 
             Parameter parameter2 = new() { Id = 2 };
-            parameter2 = _business.Read(parameter2);
+            parameter2 = _business.Read(parameter2, connectionFake);
 
             Assert.NotEqual("Parámetro 2", parameter2.Name);
         }
@@ -169,10 +177,10 @@ namespace Business.Test.Config
         public void ParameterDeleteTest()
         {
             Parameter parameter = new() { Id = 3 };
-            _ = _business.Delete(parameter, new() { Id = 1 });
+            _ = _business.Delete(parameter, new() { Id = 1 }, connectionFake);
 
             Parameter parameter2 = new() { Id = 3 };
-            parameter2 = _business.Read(parameter2);
+            parameter2 = _business.Read(parameter2, connectionFake);
 
             Assert.Equal(0, parameter2.Id);
         }
