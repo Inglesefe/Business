@@ -5,6 +5,7 @@ using Dal.Exceptions;
 using Entities.Auth;
 using Entities.Config;
 using Moq;
+using System.Data;
 
 namespace Business.Test.Config
 {
@@ -19,6 +20,11 @@ namespace Business.Test.Config
         /// Capa de negocio de los planes
         /// </summary>
         private readonly BusinessPlan _business;
+
+        /// <summary>
+        /// Conexión a la base de datos falsa
+        /// </summary>
+        private readonly IDbConnection connectionFake;
         #endregion
 
         #region Constructors
@@ -28,6 +34,8 @@ namespace Business.Test.Config
         public PlanTest()
         {
             Mock<IPersistentWithLog<Plan>> mock = new();
+            Mock<IDbConnection> mockConnection = new();
+            connectionFake = mockConnection.Object;
 
             List<Plan> plans = new()
             {
@@ -36,24 +44,24 @@ namespace Business.Test.Config
                 new Plan() { Id = 3, Value = 3779100, InitialFee = 235350, InstallmentsNumber = 15, InstallmentValue = 236250, Active = false, Description = "PLAN COFREM 15 MESES ESPECIAL" }
             };
 
-            mock.Setup(p => p.List("idplan = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            mock.Setup(p => p.List("idplan = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
                 .Returns(new ListResult<Plan>(plans.Where(y => y.Id == 1).ToList(), 1));
-            mock.Setup(p => p.List("idplano = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            mock.Setup(p => p.List("idplano = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
                 .Throws<PersistentException>();
 
-            mock.Setup(p => p.Read(It.IsAny<Plan>()))
-                .Returns((Plan plan) => plans.Find(x => x.Id == plan.Id) ?? new Plan());
+            mock.Setup(p => p.Read(It.IsAny<Plan>(), It.IsAny<IDbConnection>()))
+                .Returns((Plan plan, IDbConnection connection) => plans.Find(x => x.Id == plan.Id) ?? new Plan());
 
-            mock.Setup(p => p.Insert(It.IsAny<Plan>(), It.IsAny<User>()))
-                .Returns((Plan plan, User user) =>
+            mock.Setup(p => p.Insert(It.IsAny<Plan>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((Plan plan, User user, IDbConnection connection) =>
                 {
                     plan.Id = plans.Count + 1;
                     plans.Add(plan);
                     return plan;
                 });
 
-            mock.Setup(p => p.Update(It.IsAny<Plan>(), It.IsAny<User>()))
-                .Returns((Plan plan, User user) =>
+            mock.Setup(p => p.Update(It.IsAny<Plan>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((Plan plan, User user, IDbConnection connection) =>
                 {
                     plans.Where(x => x.Id == plan.Id).ToList().ForEach(x =>
                     {
@@ -67,8 +75,8 @@ namespace Business.Test.Config
                     return plan;
                 });
 
-            mock.Setup(p => p.Delete(It.IsAny<Plan>(), It.IsAny<User>()))
-                .Returns((Plan plan, User user) =>
+            mock.Setup(p => p.Delete(It.IsAny<Plan>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((Plan plan, User user, IDbConnection connection) =>
                 {
                     plans = plans.Where(x => x.Id != plan.Id).ToList();
                     return plan;
@@ -85,7 +93,7 @@ namespace Business.Test.Config
         [Fact]
         public void PlanListTest()
         {
-            ListResult<Plan> list = _business.List("idplan = 1", "value", 1, 0);
+            ListResult<Plan> list = _business.List("idplan = 1", "value", 1, 0, connectionFake);
 
             Assert.NotEmpty(list.List);
             Assert.True(list.Total > 0);
@@ -97,7 +105,7 @@ namespace Business.Test.Config
         [Fact]
         public void PlanListWithErrorTest()
         {
-            Assert.Throws<PersistentException>(() => _business.List("idplano = 1", "value", 1, 0));
+            Assert.Throws<PersistentException>(() => _business.List("idplano = 1", "value", 1, 0, connectionFake));
         }
 
         /// <summary>
@@ -107,7 +115,7 @@ namespace Business.Test.Config
         public void PlanReadTest()
         {
             Plan plan = new() { Id = 1 };
-            plan = _business.Read(plan);
+            plan = _business.Read(plan, connectionFake);
 
             Assert.Equal(12, plan.InstallmentsNumber);
         }
@@ -119,7 +127,7 @@ namespace Business.Test.Config
         public void PlanReadNotFoundTest()
         {
             Plan plan = new() { Id = 10 };
-            plan = _business.Read(plan);
+            plan = _business.Read(plan, connectionFake);
 
             Assert.Equal(0, plan.Id);
         }
@@ -131,7 +139,7 @@ namespace Business.Test.Config
         public void PlanInsertTest()
         {
             Plan plan = new() { InitialFee = 5000, InstallmentsNumber = 5, InstallmentValue = 250, Value = 75000, Active = true, Description = "Plan de prueba de insercion" };
-            plan = _business.Insert(plan, new() { Id = 1 });
+            plan = _business.Insert(plan, new() { Id = 1 }, connectionFake);
 
             Assert.NotEqual(0, plan.Id);
         }
@@ -143,10 +151,10 @@ namespace Business.Test.Config
         public void PlanUpdateTest()
         {
             Plan plan = new() { Id = 2, InitialFee = 54321, InstallmentsNumber = 35, InstallmentValue = 750, Value = 85000, Active = true, Description = "Plan de prueba de actualización" };
-            _ = _business.Update(plan, new() { Id = 1 });
+            _ = _business.Update(plan, new() { Id = 1 }, connectionFake);
 
             Plan plan2 = new() { Id = 2 };
-            plan2 = _business.Read(plan2);
+            plan2 = _business.Read(plan2, connectionFake);
 
             Assert.NotEqual(15, plan2.InstallmentsNumber);
         }
@@ -158,10 +166,10 @@ namespace Business.Test.Config
         public void PlanDeleteTest()
         {
             Plan plan = new() { Id = 3 };
-            _ = _business.Delete(plan, new() { Id = 1 });
+            _ = _business.Delete(plan, new() { Id = 1 }, connectionFake);
 
             Plan plan2 = new() { Id = 3 };
-            plan2 = _business.Read(plan2);
+            plan2 = _business.Read(plan2, connectionFake);
 
             Assert.Equal(0, plan2.Id);
         }

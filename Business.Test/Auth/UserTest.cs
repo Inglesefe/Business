@@ -5,6 +5,7 @@ using Dal.Exceptions;
 using Entities.Auth;
 using Microsoft.Extensions.Configuration;
 using Moq;
+using System.Data;
 
 namespace Business.Test.Auth
 {
@@ -24,6 +25,11 @@ namespace Business.Test.Auth
         /// Capa de negocio de los usuarios
         /// </summary>
         private readonly BusinessUser _business;
+
+        /// <summary>
+        /// Conexión a la base de datos falsa
+        /// </summary>
+        private readonly IDbConnection connectionFake;
         #endregion
 
         #region Constructors
@@ -38,6 +44,8 @@ namespace Business.Test.Auth
                 .Build();
 
             Mock<IPersistentUser> mock = new();
+            Mock<IDbConnection> mockConnection = new();
+            connectionFake = mockConnection.Object;
 
             List<Role> roles = new()
             {
@@ -61,22 +69,22 @@ namespace Business.Test.Auth
                 new Tuple<User, Role>(users[1], roles[1])
             };
 
-            mock.Setup(p => p.List("iduser = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            mock.Setup(p => p.List("iduser = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
                 .Returns(new ListResult<User>(users.Where(y => y.Id == 1).ToList(), 1));
-            mock.Setup(p => p.List("idusuario = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            mock.Setup(p => p.List("idusuario = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
                 .Throws<PersistentException>();
 
-            mock.Setup(p => p.Read(It.IsAny<User>()))
-                .Returns((User user) => users.Find(x => x.Id == user.Id) ?? new User());
+            mock.Setup(p => p.Read(It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((User user, IDbConnection connection) => users.Find(x => x.Id == user.Id) ?? new User());
 
-            mock.Setup(p => p.ReadByLoginAndPassword(It.IsAny<User>(), It.IsAny<string>()))
-                .Returns((User user, string password) => users.Find(x => x.Login == user.Login && password == "Prueba123" && x.Active) ?? new User());
+            mock.Setup(p => p.ReadByLoginAndPassword(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<IDbConnection>()))
+                .Returns((User user, string password, IDbConnection connection) => users.Find(x => x.Login == user.Login && password == "Prueba123" && x.Active) ?? new User());
 
-            mock.Setup(p => p.ReadByLogin(It.IsAny<User>()))
-                .Returns((User user) => users.Find(x => x.Login == user.Login) ?? new User());
+            mock.Setup(p => p.ReadByLogin(It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((User user, IDbConnection connection) => users.Find(x => x.Login == user.Login) ?? new User());
 
-            mock.Setup(p => p.Insert(It.IsAny<User>(), It.IsAny<User>()))
-                .Returns((User user, User user1) =>
+            mock.Setup(p => p.Insert(It.IsAny<User>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((User user, User user1, IDbConnection connection) =>
                 {
                     if (users.Exists(x => x.Login == user.Login))
                     {
@@ -90,44 +98,44 @@ namespace Business.Test.Auth
                     }
                 });
 
-            mock.Setup(p => p.Update(It.IsAny<User>(), It.IsAny<User>()))
-                .Returns((User user, User user1) =>
+            mock.Setup(p => p.Update(It.IsAny<User>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((User user, User user1, IDbConnection connection) =>
                 {
                     users.Where(x => x.Id == user.Id).ToList().ForEach(x => { x.Login = user.Login; x.Name = user.Name; x.Active = user.Active; });
                     return user;
                 });
 
-            mock.Setup(p => p.UpdatePassword(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<User>()))
-                .Returns((User user, string password, User user1) =>
+            mock.Setup(p => p.UpdatePassword(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((User user, string password, User user1, IDbConnection connection) =>
                 {
                     return user;
                 });
 
-            mock.Setup(p => p.Delete(It.IsAny<User>(), It.IsAny<User>()))
-                .Returns((User user, User user1) =>
+            mock.Setup(p => p.Delete(It.IsAny<User>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((User user, User user1, IDbConnection connection) =>
                 {
                     users = users.Where(x => x.Id != user.Id).ToList();
                     return user;
                 });
 
-            mock.Setup(p => p.ListRoles("", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<User>()))
+            mock.Setup(p => p.ListRoles("", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
                 .Returns(new ListResult<Role>(users_roles.Where(x => x.Item1.Id == 1).Select(x => x.Item2).ToList(), 1));
 
-            mock.Setup(p => p.ListRoles("r.idrole = 2", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<User>()))
+            mock.Setup(p => p.ListRoles("r.idrole = 2", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
                 .Returns(new ListResult<Role>(new List<Role>(), 0));
 
-            mock.Setup(p => p.ListRoles("idusuario = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<User>()))
+            mock.Setup(p => p.ListRoles("idusuario = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
                 .Throws<PersistentException>();
 
-            mock.Setup(p => p.ListNotRoles(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<User>()))
-                .Returns((string filters, string orders, int limit, int offset, User user) =>
+            mock.Setup(p => p.ListNotRoles(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
+                .Returns((string filters, string orders, int limit, int offset, User user, IDbConnection connection) =>
                 {
                     List<Role> result = roles.Where(x => !users_roles.Exists(y => y.Item1.Id == user.Id && y.Item2.Id == x.Id)).ToList();
                     return new ListResult<Role>(result, result.Count);
                 });
 
-            mock.Setup(p => p.InsertRole(It.IsAny<Role>(), It.IsAny<User>(), It.IsAny<User>())).
-                Returns((Role role, User user, User user1) =>
+            mock.Setup(p => p.InsertRole(It.IsAny<Role>(), It.IsAny<User>(), It.IsAny<User>(), It.IsAny<IDbConnection>())).
+                Returns((Role role, User user, User user1, IDbConnection connection) =>
                 {
                     if (users_roles.Exists(x => x.Item1.Id == user.Id && x.Item2.Id == role.Id))
                     {
@@ -151,7 +159,7 @@ namespace Business.Test.Auth
         [Fact]
         public void UserListTest()
         {
-            ListResult<User> list = _business.List("iduser = 1", "name", 1, 0);
+            ListResult<User> list = _business.List("iduser = 1", "name", 1, 0, connectionFake);
 
             Assert.NotEmpty(list.List);
             Assert.True(list.Total > 0);
@@ -163,7 +171,7 @@ namespace Business.Test.Auth
         [Fact]
         public void UserListWithErrorTest()
         {
-            Assert.Throws<PersistentException>(() => _business.List("idusuario = 1", "name", 1, 0));
+            Assert.Throws<PersistentException>(() => _business.List("idusuario = 1", "name", 1, 0, connectionFake));
         }
 
         /// <summary>
@@ -173,7 +181,7 @@ namespace Business.Test.Auth
         public void UserReadTest()
         {
             User user = new() { Id = 1 };
-            user = _business.Read(user);
+            user = _business.Read(user, connectionFake);
 
             Assert.Equal("leandrobaena@gmail.com", user.Login);
         }
@@ -185,7 +193,7 @@ namespace Business.Test.Auth
         public void UserReadNotFoundTest()
         {
             User user = new() { Id = 10 };
-            user = _business.Read(user);
+            user = _business.Read(user, connectionFake);
 
             Assert.Equal(0, user.Id);
         }
@@ -197,7 +205,7 @@ namespace Business.Test.Auth
         public void UserInsertTest()
         {
             User user = new() { Login = "insertado@prueba.com", Name = "Prueba 1", Active = true };
-            user = _business.Insert(user, new() { Id = 1 });
+            user = _business.Insert(user, new() { Id = 1 }, connectionFake);
 
             Assert.NotEqual(0, user.Id);
         }
@@ -210,7 +218,7 @@ namespace Business.Test.Auth
         {
             User user = new() { Login = "leandrobaena@gmail.com", Name = "Prueba insertar", Active = true };
 
-            _ = Assert.Throws<PersistentException>(() => _business.Insert(user, new() { Id = 1 }));
+            _ = Assert.Throws<PersistentException>(() => _business.Insert(user, new() { Id = 1 }, connectionFake));
         }
 
         /// <summary>
@@ -220,10 +228,10 @@ namespace Business.Test.Auth
         public void UserUpdateTest()
         {
             User user = new() { Id = 2, Login = "otrologin@gmail.com", Name = "Prueba actualizar", Active = false };
-            _ = _business.Update(user, new() { Id = 1 });
+            _ = _business.Update(user, new() { Id = 1 }, connectionFake);
 
             User user2 = new() { Id = 2 };
-            user2 = _business.Read(user2);
+            user2 = _business.Read(user2, connectionFake);
 
             Assert.NotEqual("actualizame@gmail.com", user2.Name);
             Assert.False(user2.Active);
@@ -236,10 +244,10 @@ namespace Business.Test.Auth
         public void UserDeleteTest()
         {
             User user = new() { Id = 3 };
-            _ = _business.Delete(user, new() { Id = 1 });
+            _ = _business.Delete(user, new() { Id = 1 }, connectionFake);
 
             User user2 = new() { Id = 3 };
-            user2 = _business.Read(user2);
+            user2 = _business.Read(user2, connectionFake);
 
             Assert.Equal(0, user2.Id);
         }
@@ -251,7 +259,7 @@ namespace Business.Test.Auth
         public void UserReadByLoginAndPasswordTest()
         {
             User user = new() { Login = "leandrobaena@gmail.com" };
-            user = _business.ReadByLoginAndPassword(user, "FLWnwyoEz/7tYsnS+vxTVg==", _configuration["Aes:Key"] ?? "", _configuration["Aes:IV"] ?? "");
+            user = _business.ReadByLoginAndPassword(user, "FLWnwyoEz/7tYsnS+vxTVg==", _configuration["Aes:Key"] ?? "", _configuration["Aes:IV"] ?? "", connectionFake);
 
             Assert.NotEqual(0, user.Id);
         }
@@ -263,7 +271,7 @@ namespace Business.Test.Auth
         public void UserReadByLoginAndPasswordWithErrorTest()
         {
             User user = new() { Login = "actualizame@gmail.com" };
-            user = _business.ReadByLoginAndPassword(user, "o2qMay2SrdjaZLxLFW1yQA==", _configuration["Aes:Key"] ?? "", _configuration["Aes:IV"] ?? "");
+            user = _business.ReadByLoginAndPassword(user, "o2qMay2SrdjaZLxLFW1yQA==", _configuration["Aes:Key"] ?? "", _configuration["Aes:IV"] ?? "", connectionFake);
 
             Assert.Equal(0, user.Id);
         }
@@ -275,7 +283,7 @@ namespace Business.Test.Auth
         public void UserReadByLoginTest()
         {
             User user = new() { Login = "leandrobaena@gmail.com" };
-            user = _business.ReadByLogin(user);
+            user = _business.ReadByLogin(user, connectionFake);
 
             Assert.NotEqual(0, user.Id);
         }
@@ -287,7 +295,7 @@ namespace Business.Test.Auth
         public void UserReadByLoginAndPasswordInactiveTest()
         {
             User user = new() { Login = "inactivo@gmail.com" };
-            user = _business.ReadByLoginAndPassword(user, "FLWnwyoEz/7tYsnS+vxTVg==", _configuration["Aes:Key"] ?? "", _configuration["Aes:IV"] ?? "");
+            user = _business.ReadByLoginAndPassword(user, "FLWnwyoEz/7tYsnS+vxTVg==", _configuration["Aes:Key"] ?? "", _configuration["Aes:IV"] ?? "", connectionFake);
 
             Assert.Equal(0, user.Id);
         }
@@ -299,9 +307,9 @@ namespace Business.Test.Auth
         public void UserUpdatePasswordTest()
         {
             User user = new() { Id = 1, Login = "leandrobaena@gmail.com" };
-            _ = _business.UpdatePassword(user, "FLWnwyoEz/7tYsnS+vxTVg==", _configuration["Aes:Key"] ?? "", _configuration["Aes:IV"] ?? "", new() { Id = 1 });
+            _ = _business.UpdatePassword(user, "FLWnwyoEz/7tYsnS+vxTVg==", _configuration["Aes:Key"] ?? "", _configuration["Aes:IV"] ?? "", new() { Id = 1 }, connectionFake);
 
-            user = _business.ReadByLoginAndPassword(user, "FLWnwyoEz/7tYsnS+vxTVg==", _configuration["Aes:Key"] ?? "", _configuration["Aes:IV"] ?? "");
+            user = _business.ReadByLoginAndPassword(user, "FLWnwyoEz/7tYsnS+vxTVg==", _configuration["Aes:Key"] ?? "", _configuration["Aes:IV"] ?? "", connectionFake);
 
             Assert.NotEqual(0, user.Id);
         }
@@ -312,7 +320,7 @@ namespace Business.Test.Auth
         [Fact]
         public void UserListRolesTest()
         {
-            ListResult<Role> list = _business.ListRoles("", "", 10, 0, new() { Id = 1 });
+            ListResult<Role> list = _business.ListRoles("", "", 10, 0, new() { Id = 1 }, connectionFake);
 
             Assert.NotEmpty(list.List);
             Assert.True(list.Total > 0);
@@ -324,7 +332,7 @@ namespace Business.Test.Auth
         [Fact]
         public void UserListRolesWithErrorTest()
         {
-            _ = Assert.Throws<PersistentException>(() => _business.ListRoles("idusuario = 1", "name", 10, 0, new() { Id = 1 }));
+            _ = Assert.Throws<PersistentException>(() => _business.ListRoles("idusuario = 1", "name", 10, 0, new() { Id = 1 }, connectionFake));
         }
 
         /// <summary>
@@ -333,7 +341,7 @@ namespace Business.Test.Auth
         [Fact]
         public void UserListNotRolesTest()
         {
-            ListResult<Role> list = _business.ListNotRoles("", "", 10, 0, new() { Id = 1 });
+            ListResult<Role> list = _business.ListNotRoles("", "", 10, 0, new() { Id = 1 }, connectionFake);
 
             Assert.NotEmpty(list.List);
             Assert.True(list.Total > 0);
@@ -345,7 +353,7 @@ namespace Business.Test.Auth
         [Fact]
         public void UserInsertRoleTest()
         {
-            Role role = _business.InsertRole(new() { Id = 4 }, new() { Id = 1 }, new() { Id = 1 });
+            Role role = _business.InsertRole(new() { Id = 4 }, new() { Id = 1 }, new() { Id = 1 }, connectionFake);
 
             Assert.NotEqual(0, role.Id);
         }
@@ -356,7 +364,7 @@ namespace Business.Test.Auth
         [Fact]
         public void UserInsertRoleDuplicateTest()
         {
-            _ = Assert.Throws<PersistentException>(() => _business.InsertRole(new() { Id = 1 }, new() { Id = 1 }, new() { Id = 1 }));
+            _ = Assert.Throws<PersistentException>(() => _business.InsertRole(new() { Id = 1 }, new() { Id = 1 }, new() { Id = 1 }, connectionFake));
         }
 
         /// <summary>
@@ -365,8 +373,8 @@ namespace Business.Test.Auth
         [Fact]
         public void UserDeleteRoleTest()
         {
-            _ = _business.DeleteRole(new() { Id = 2 }, new() { Id = 1 }, new() { Id = 1 });
-            ListResult<Role> list = _business.ListRoles("r.idrole = 2", "", 10, 0, new() { Id = 1 });
+            _ = _business.DeleteRole(new() { Id = 2 }, new() { Id = 1 }, new() { Id = 1 }, connectionFake);
+            ListResult<Role> list = _business.ListRoles("r.idrole = 2", "", 10, 0, new() { Id = 1 }, connectionFake);
 
             Assert.Equal(0, list.Total);
         }
