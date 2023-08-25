@@ -3,6 +3,7 @@ using Dal.Auth;
 using Dal.Dto;
 using Dal.Exceptions;
 using Entities.Auth;
+using System.Data;
 
 namespace Business.Auth
 {
@@ -28,13 +29,14 @@ namespace Business.Auth
         /// <param name="limit">Límite de registros a traer</param>
         /// <param name="offset">Corrimiento desde el que se cuenta el número de registros</param>
         /// <param name="role">Rol al que se le consultan los usuarios asignados</param>
+        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Listado de usuarios asignados al rol</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar los usuarios</exception>
-        public ListResult<User> ListUsers(string filters, string orders, int limit, int offset, Role role)
+        public ListResult<User> ListUsers(string filters, string orders, int limit, int offset, Role role, IDbConnection connection)
         {
             try
             {
-                return ((IPersistentRole)_persistent).ListUsers(filters, orders, limit, offset, role);
+                return ((IPersistentRole)_persistent).ListUsers(filters, orders, limit, offset, role, connection);
             }
             catch (PersistentException)
             {
@@ -54,13 +56,14 @@ namespace Business.Auth
         /// <param name="limit">Límite de registros a traer</param>
         /// <param name="offset">Corrimiento desde el que se cuenta el número de registros</param>
         /// <param name="role">Rol al que se le consultan los usuarios no asignados</param>
+        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Listado de usuarios no asignados al rol</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar los usuarios</exception>
-        public ListResult<User> ListNotUsers(string filters, string orders, int limit, int offset, Role role)
+        public ListResult<User> ListNotUsers(string filters, string orders, int limit, int offset, Role role, IDbConnection connection)
         {
             try
             {
-                return ((IPersistentRole)_persistent).ListNotUsers(filters, orders, limit, offset, role);
+                return ((IPersistentRole)_persistent).ListNotUsers(filters, orders, limit, offset, role, connection);
             }
             catch (PersistentException)
             {
@@ -78,13 +81,14 @@ namespace Business.Auth
         /// <param name="user">Usuario que se asigna al rol</param>
         /// <param name="role">Rol al que se le asigna el usuario</param>
         /// <param name="user1">Usuario que realiza la inserción</param>
+        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Usuario asignado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al asignar el usuario al rol</exception>
-        public User InsertUser(User user, Role role, User user1)
+        public User InsertUser(User user, Role role, User user1, IDbConnection connection)
         {
             try
             {
-                return ((IPersistentRole)_persistent).InsertUser(user, role, user1);
+                return ((IPersistentRole)_persistent).InsertUser(user, role, user1, connection);
             }
             catch (PersistentException)
             {
@@ -104,11 +108,11 @@ namespace Business.Auth
         /// <param name="user1">Usuario que realiza la eliminación</param>
         /// <returns>Usuario eliminado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al eliminar el usuario del rol</exception>
-        public User DeleteUser(User user, Role role, User user1)
+        public User DeleteUser(User user, Role role, User user1, IDbConnection connection)
         {
             try
             {
-                return ((IPersistentRole)_persistent).DeleteUser(user, role, user1);
+                return ((IPersistentRole)_persistent).DeleteUser(user, role, user1, connection);
             }
             catch (PersistentException)
             {
@@ -130,11 +134,11 @@ namespace Business.Auth
         /// <param name="role">Rol al que se le consultan las aplicaciones asignadas</param>
         /// <returns>Listado de aplicaciones asignadas al rol</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar las aplicaciones</exception>
-        public ListResult<Application> ListApplications(string filters, string orders, int limit, int offset, Role role)
+        public ListResult<Application> ListApplications(string filters, string orders, int limit, int offset, Role role, IDbConnection connection)
         {
             try
             {
-                return ((IPersistentRole)_persistent).ListApplications(filters, orders, limit, offset, role);
+                return ((IPersistentRole)_persistent).ListApplications(filters, orders, limit, offset, role, connection);
             }
             catch (PersistentException)
             {
@@ -156,11 +160,11 @@ namespace Business.Auth
         /// <param name="role">Rol al que se le consultan las aplicaciones no asignadas</param>
         /// <returns>Listado de aplicaciones no asignadas al rol</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar los usuarios</exception>
-        public ListResult<Application> ListNotApplications(string filters, string orders, int limit, int offset, Role role)
+        public ListResult<Application> ListNotApplications(string filters, string orders, int limit, int offset, Role role, IDbConnection connection)
         {
             try
             {
-                return ((IPersistentRole)_persistent).ListNotApplications(filters, orders, limit, offset, role);
+                return ((IPersistentRole)_persistent).ListNotApplications(filters, orders, limit, offset, role, connection);
             }
             catch (PersistentException)
             {
@@ -180,11 +184,11 @@ namespace Business.Auth
         /// <param name="user">Usuario que realiza la inserción</param>
         /// <returns>Aplicación asignada</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al asignar la aplicación al rol</exception>
-        public Application InsertApplication(Application application, Role role, User user)
+        public Application InsertApplication(Application application, Role role, User user, IDbConnection connection)
         {
             try
             {
-                return ((IPersistentRole)_persistent).InsertApplication(application, role, user);
+                return ((IPersistentRole)_persistent).InsertApplication(application, role, user, connection);
             }
             catch (PersistentException)
             {
@@ -204,11 +208,11 @@ namespace Business.Auth
         /// <param name="user">Usuario que realiza la eliminación</param>
         /// <returns>Aplicación eliminada</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al eliminar la aplicación del rol</exception>
-        public Application DeleteApplication(Application application, Role role, User user)
+        public Application DeleteApplication(Application application, Role role, User user, IDbConnection connection)
         {
             try
             {
-                return ((IPersistentRole)_persistent).DeleteApplication(application, role, user);
+                return ((IPersistentRole)_persistent).DeleteApplication(application, role, user, connection);
             }
             catch (PersistentException)
             {

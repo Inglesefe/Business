@@ -1,6 +1,7 @@
 ﻿using Business.Exceptions;
 using Dal.Dto;
 using Entities.Auth;
+using System.Data;
 
 namespace Business.Auth
 {
@@ -16,7 +17,7 @@ namespace Business.Auth
         /// <param name="iv">Vector de inicializaci{on para el algoritmo AES</param>
         /// <returns>Usuario con los datos cargados desde la base de datos</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar el usuario</exception>
-        User ReadByLoginAndPassword(User entity, string password, string key, string iv);
+        User ReadByLoginAndPassword(User entity, string password, string key, string iv, IDbConnection connection);
 
         /// <summary>
         /// Consulta un usuario dado su login y si est{a activo
@@ -24,7 +25,7 @@ namespace Business.Auth
         /// <param name="entity">Usuario a consultar</param>
         /// <returns>Usuario con los datos cargados desde la base de datos</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar el usuario</exception>
-        User ReadByLogin(User entity);
+        User ReadByLogin(User entity, IDbConnection connection);
 
         /// <summary>
         /// Actualiza la contraseña de un usuario en la base de datos
@@ -36,7 +37,7 @@ namespace Business.Auth
         /// <param name="iv">Vector de inicializaci{on para el algoritmo AES</param>
         /// <returns>Usuario actualizado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al actualizar el usuario</exception>
-        User UpdatePassword(User entity, string password, string key, string iv, User user);
+        User UpdatePassword(User entity, string password, string key, string iv, User user, IDbConnection connection);
 
         /// <summary>
         /// Trae un listado de roles asignados a un usuario desde la base de datos
@@ -48,7 +49,7 @@ namespace Business.Auth
         /// <param name="user">Usuario al que se le consultan los roles asignados</param>
         /// <returns>Listado de roles asignados al usuario</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar los roles</exception>
-        ListResult<Role> ListRoles(string filters, string orders, int limit, int offset, User user);
+        ListResult<Role> ListRoles(string filters, string orders, int limit, int offset, User user, IDbConnection connection);
 
         /// <summary>
         /// Trae un listado de roles no asignados a un usuario desde la base de datos
@@ -60,7 +61,7 @@ namespace Business.Auth
         /// <param name="user">Usuario al que se le consultan los roles no asignados</param>
         /// <returns>Listado de roles no asignados al usuario</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar los roles</exception>
-        ListResult<Role> ListNotRoles(string filters, string orders, int limit, int offset, User user);
+        ListResult<Role> ListNotRoles(string filters, string orders, int limit, int offset, User user, IDbConnection connection);
 
         /// <summary>
         /// Asigna un rol a un usuario en la base de datos
@@ -70,7 +71,7 @@ namespace Business.Auth
         /// <param name="user1">Usuario que realiza la inserción</param>
         /// <returns>Rol asignado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al asignar el rol al usuario</exception>
-        Role InsertRole(Role role, User user, User user1);
+        Role InsertRole(Role role, User user, User user1, IDbConnection connection);
 
         /// <summary>
         /// Elimina un rol de un usuario de la base de datos
@@ -80,7 +81,7 @@ namespace Business.Auth
         /// <param name="user1">Usuario que realiza la eliminación</param>
         /// <returns>Rol eliminado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al eliminar el rol del usuario</exception>
-        Role DeleteRole(Role role, User user, User user1);
+        Role DeleteRole(Role role, User user, User user1, IDbConnection connection);
         #endregion
     }
 }
