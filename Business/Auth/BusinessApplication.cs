@@ -3,7 +3,6 @@ using Dal.Auth;
 using Dal.Dto;
 using Dal.Exceptions;
 using Entities.Auth;
-using System.Data;
 
 namespace Business.Auth
 {
@@ -29,14 +28,13 @@ namespace Business.Auth
         /// <param name="limit">Límite de registros a traer</param>
         /// <param name="offset">Corrimiento desde el que se cuenta el número de registros</param>
         /// <param name="application">Aplicación al que se le consultan los roles asignados</param>
-        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Listado de roles asignados a la aplicación</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar los roles</exception>
-        public ListResult<Role> ListRoles(string filters, string orders, int limit, int offset, Application application, IDbConnection connection)
+        public ListResult<Role> ListRoles(string filters, string orders, int limit, int offset, Application application)
         {
             try
             {
-                return ((IPersistentApplication)_persistent).ListRoles(filters, orders, limit, offset, application, connection);
+                return ((IPersistentApplication)_persistent).ListRoles(filters, orders, limit, offset, application);
             }
             catch (PersistentException)
             {
@@ -44,7 +42,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error at get roles related to app", ex);
+                throw new BusinessException("Error al listar los roles asociados a la aplicación", ex);
             }
         }
 
@@ -56,14 +54,13 @@ namespace Business.Auth
         /// <param name="limit">Límite de registros a traer</param>
         /// <param name="offset">Corrimiento desde el que se cuenta el número de registros</param>
         /// <param name="application">Aplicación a la que se le consultan los roles no asignados</param>
-        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Listado de roles no asignados a la aplicación</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar los roles</exception>
-        public ListResult<Role> ListNotRoles(string filters, string orders, int limit, int offset, Application application, IDbConnection connection)
+        public ListResult<Role> ListNotRoles(string filters, string orders, int limit, int offset, Application application)
         {
             try
             {
-                return ((IPersistentApplication)_persistent).ListNotRoles(filters, orders, limit, offset, application, connection);
+                return ((IPersistentApplication)_persistent).ListNotRoles(filters, orders, limit, offset, application);
             }
             catch (PersistentException)
             {
@@ -71,7 +68,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error at get roles not related to app", ex);
+                throw new BusinessException("Error al listar los roles no asociados a la aplicación", ex);
             }
         }
 
@@ -81,14 +78,13 @@ namespace Business.Auth
         /// <param name="role">Rol que se asigna a la aplicación</param>
         /// <param name="application">Aplicación al que se le asigna el rol</param>
         /// <param name="user">Usuario que realiza la inserción</param>
-        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Rol asignado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al asignar el rol a la aplicación</exception>
-        public Role InsertRole(Role role, Application application, User user, IDbConnection connection)
+        public Role InsertRole(Role role, Application application, User user)
         {
             try
             {
-                return ((IPersistentApplication)_persistent).InsertRole(role, application, user, connection);
+                return ((IPersistentApplication)_persistent).InsertRole(role, application, user);
             }
             catch (PersistentException)
             {
@@ -96,7 +92,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error at insert role related to app", ex);
+                throw new BusinessException("Error al insertar el rol asociado a la aplicación", ex);
             }
         }
 
@@ -106,14 +102,13 @@ namespace Business.Auth
         /// <param name="role">Rol a eliminarle a la aplicación</param>
         /// <param name="application">Aplicación al que se le elimina el rol</param>
         /// <param name="user">Usuario que realiza la inserción</param>
-        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Rol eliminado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al eliminar el rol de la aplicación</exception>
-        public Role DeleteRole(Role role, Application application, User user, IDbConnection connection)
+        public Role DeleteRole(Role role, Application application, User user)
         {
             try
             {
-                return ((IPersistentApplication)_persistent).DeleteRole(role, application, user, connection);
+                return ((IPersistentApplication)_persistent).DeleteRole(role, application, user);
             }
             catch (PersistentException)
             {
@@ -121,7 +116,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error at delete role related to app", ex);
+                throw new BusinessException("Error al eliminar el rol asociado a la aplicación", ex);
             }
         }
         #endregion

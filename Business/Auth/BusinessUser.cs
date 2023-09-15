@@ -4,7 +4,6 @@ using Dal.Auth;
 using Dal.Dto;
 using Dal.Exceptions;
 using Entities.Auth;
-using System.Data;
 
 namespace Business.Auth
 {
@@ -29,14 +28,13 @@ namespace Business.Auth
         /// <param name="password">Contraseña del usuario</param>
         /// <param name="key">Llave para el algoritmo AES</param>
         /// <param name="iv">Vector de inicializaci{on para el algoritmo AES</param>
-        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Usuario con los datos cargados desde la base de datos</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar el usuario</exception>
-        public User ReadByLoginAndPassword(User entity, string password, string key, string iv, IDbConnection connection)
+        public User ReadByLoginAndPassword(User entity, string password, string key, string iv)
         {
             try
             {
-                return ((IPersistentUser)_persistent).ReadByLoginAndPassword(entity, Crypto.Decrypt(password, key, iv), connection);
+                return ((IPersistentUser)_persistent).ReadByLoginAndPassword(entity, Crypto.Decrypt(password, key, iv));
             }
             catch (PersistentException)
             {
@@ -44,7 +42,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error at get an user", ex);
+                throw new BusinessException("Error al consultar un usuario por su login y contraseña", ex);
             }
         }
 
@@ -52,14 +50,13 @@ namespace Business.Auth
         /// Consulta un usuario dado su login y si est{a activo
         /// </summary>
         /// <param name="entity">Usuario a consultar</param>
-        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Usuario con los datos cargados desde la base de datos</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar el usuario</exception>
-        public User ReadByLogin(User entity, IDbConnection connection)
+        public User ReadByLogin(User entity)
         {
             try
             {
-                return ((IPersistentUser)_persistent).ReadByLogin(entity, connection);
+                return ((IPersistentUser)_persistent).ReadByLogin(entity);
             }
             catch (PersistentException)
             {
@@ -67,7 +64,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error at get an user", ex);
+                throw new BusinessException("Error al consultar un usuario por su login", ex);
             }
         }
 
@@ -79,14 +76,13 @@ namespace Business.Auth
         /// <param name="user">Usuario que realiza la actualización</param>
         /// <param name="key">Llave para el algoritmo AES</param>
         /// <param name="iv">Vector de inicializaci{on para el algoritmo AES</param>
-        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Usuario actualizado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al actualizar el usuario</exception>
-        public User UpdatePassword(User entity, string password, string key, string iv, User user, IDbConnection connection)
+        public User UpdatePassword(User entity, string password, string key, string iv, User user)
         {
             try
             {
-                return ((IPersistentUser)_persistent).UpdatePassword(entity, Crypto.Decrypt(password, key, iv), user, connection);
+                return ((IPersistentUser)_persistent).UpdatePassword(entity, Crypto.Decrypt(password, key, iv), user);
             }
             catch (PersistentException)
             {
@@ -94,7 +90,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error at update password of an user", ex);
+                throw new BusinessException("Error al actualizar la contrseña de un usuario", ex);
             }
         }
 
@@ -106,14 +102,13 @@ namespace Business.Auth
         /// <param name="limit">Límite de registros a traer</param>
         /// <param name="offset">Corrimiento desde el que se cuenta el número de registros</param>
         /// <param name="user">Usuario al que se le consultan los roles asignados</param>
-        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Listado de roles asignados al usuario</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar los roles</exception>
-        public ListResult<Role> ListRoles(string filters, string orders, int limit, int offset, User user, IDbConnection connection)
+        public ListResult<Role> ListRoles(string filters, string orders, int limit, int offset, User user)
         {
             try
             {
-                return ((IPersistentUser)_persistent).ListRoles(filters, orders, limit, offset, user, connection);
+                return ((IPersistentUser)_persistent).ListRoles(filters, orders, limit, offset, user);
             }
             catch (PersistentException)
             {
@@ -121,7 +116,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error at get roles related with an user", ex);
+                throw new BusinessException("Error al lsitar los roles asociados a un usuario", ex);
             }
         }
 
@@ -133,14 +128,13 @@ namespace Business.Auth
         /// <param name="limit">Límite de registros a traer</param>
         /// <param name="offset">Corrimiento desde el que se cuenta el número de registros</param>
         /// <param name="user">Usuario al que se le consultan los roles no asignados</param>
-        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Listado de roles no asignados al usuario</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al consultar los roles</exception>
-        public ListResult<Role> ListNotRoles(string filters, string orders, int limit, int offset, User user, IDbConnection connection)
+        public ListResult<Role> ListNotRoles(string filters, string orders, int limit, int offset, User user)
         {
             try
             {
-                return ((IPersistentUser)_persistent).ListNotRoles(filters, orders, limit, offset, user, connection);
+                return ((IPersistentUser)_persistent).ListNotRoles(filters, orders, limit, offset, user);
             }
             catch (PersistentException)
             {
@@ -148,7 +142,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error at get roles not related with an user", ex);
+                throw new BusinessException("Error al lsitar los roles no asociados a un usuario", ex);
             }
         }
 
@@ -158,14 +152,13 @@ namespace Business.Auth
         /// <param name="role">Rol que se asigna al usuario</param>
         /// <param name="user">Usuario al que se le asigna el rol</param>
         /// <param name="user1">Usuario que realiza la inserción</param>
-        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Rol asignado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al asignar el rol al usuario</exception>
-        public Role InsertRole(Role role, User user, User user1, IDbConnection connection)
+        public Role InsertRole(Role role, User user, User user1)
         {
             try
             {
-                return ((IPersistentUser)_persistent).InsertRole(role, user, user1, connection);
+                return ((IPersistentUser)_persistent).InsertRole(role, user, user1);
             }
             catch (PersistentException)
             {
@@ -173,7 +166,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error at insert role related with an user", ex);
+                throw new BusinessException("Error al insertar un rol asociado con un usuario", ex);
             }
         }
 
@@ -183,14 +176,13 @@ namespace Business.Auth
         /// <param name="role">Rol a eliminarle al usuario</param>
         /// <param name="user">Usuario al que se le elimina el rol</param>
         /// <param name="user1">Usuario que realiza la eliminación</param>
-        /// <param name="connection">Conexión a la base de datos</param>
         /// <returns>Rol eliminado</returns>
         /// <exception cref="BusinessException">Si hubo una excepción al eliminar el rol del usuario</exception>
-        public Role DeleteRole(Role role, User user, User user1, IDbConnection connection)
+        public Role DeleteRole(Role role, User user, User user1)
         {
             try
             {
-                return ((IPersistentUser)_persistent).DeleteRole(role, user, user1, connection);
+                return ((IPersistentUser)_persistent).DeleteRole(role, user, user1);
             }
             catch (PersistentException)
             {
@@ -198,7 +190,7 @@ namespace Business.Auth
             }
             catch (Exception ex)
             {
-                throw new BusinessException("Error at delete role related with an user", ex);
+                throw new BusinessException("Error al eliminar un rol asociado con un usuario", ex);
             }
         }
         #endregion

@@ -20,11 +20,6 @@ namespace Business.Test.Config
         /// Capa de negocio de las ciudades
         /// </summary>
         private readonly BusinessCity _business;
-
-        /// <summary>
-        /// Conexión a la base de datos falsa
-        /// </summary>
-        private readonly IDbConnection connectionFake;
         #endregion
 
         #region Constructors
@@ -33,27 +28,22 @@ namespace Business.Test.Config
         /// </summary>
         public CityTest()
         {
+            //Arrange
             Mock<IPersistentWithLog<City>> mock = new();
-            Mock<IDbConnection> mockConnection = new();
-            connectionFake = mockConnection.Object;
-
             List<City> cities = new()
             {
                 new City() { Id = 1, Code = "BOG", Name = "Bogotá" },
                 new City() { Id = 1, Code = "MED", Name = "Medellín" },
                 new City() { Id = 1, Code = "CAL", Name = "Cali" }
             };
-
-            mock.Setup(p => p.List("ci.idcity = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
+            mock.Setup(p => p.List("ci.idcity = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
                 .Returns(new ListResult<City>(cities.Where(y => y.Id == 1).ToList(), 1));
-            mock.Setup(p => p.List("idpais = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
+            mock.Setup(p => p.List("idpais = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
                 .Throws<PersistentException>();
-
-            mock.Setup(p => p.Read(It.IsAny<City>(), It.IsAny<IDbConnection>()))
-                .Returns((City city, IDbConnection connection) => cities.Find(x => x.Id == city.Id) ?? new City());
-
-            mock.Setup(p => p.Insert(It.IsAny<City>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
-                .Returns((City city, User user, IDbConnection connection) =>
+            mock.Setup(p => p.Read(It.IsAny<City>()))
+                .Returns((City city) => cities.Find(x => x.Id == city.Id) ?? new City());
+            mock.Setup(p => p.Insert(It.IsAny<City>(), It.IsAny<User>()))
+                .Returns((City city, User user) =>
                 {
                     if (cities.Exists(x => x.Code == city.Code))
                     {
@@ -66,21 +56,18 @@ namespace Business.Test.Config
                         return city;
                     }
                 });
-
-            mock.Setup(p => p.Update(It.IsAny<City>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
-                .Returns((City city, User user, IDbConnection connection) =>
+            mock.Setup(p => p.Update(It.IsAny<City>(), It.IsAny<User>()))
+                .Returns((City city, User user) =>
                 {
                     cities.Where(x => x.Id == city.Id).ToList().ForEach(x => x.Code = city.Code);
                     return city;
                 });
-
-            mock.Setup(p => p.Delete(It.IsAny<City>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
-                .Returns((City city, User user, IDbConnection connection) =>
+            mock.Setup(p => p.Delete(It.IsAny<City>(), It.IsAny<User>()))
+                .Returns((City city, User user) =>
                 {
                     cities = cities.Where(x => x.Id != city.Id).ToList();
                     return city;
                 });
-
             _business = new(mock.Object);
         }
         #endregion
@@ -90,10 +77,12 @@ namespace Business.Test.Config
         /// Prueba la consulta de un listado de ciudades con filtros, ordenamientos y límite
         /// </summary>
         [Fact]
-        public void CityListTest()
+        public void ListTest()
         {
-            ListResult<City> list = _business.List("ci.idcity = 1", "ci.name", 1, 0, connectionFake);
+            //Act
+            ListResult<City> list = _business.List("ci.idcity = 1", "ci.name", 1, 0);
 
+            //Assert
             Assert.NotEmpty(list.List);
             Assert.True(list.Total > 0);
         }
@@ -102,20 +91,25 @@ namespace Business.Test.Config
         /// Prueba la consulta de un listado de ciudades con filtros, ordenamientos y límite y con errores
         /// </summary>
         [Fact]
-        public void CityListWithErrorTest()
+        public void ListWithErrorTest()
         {
-            Assert.Throws<PersistentException>(() => _business.List("idpais = 1", "name", 1, 0, connectionFake));
+            //Act, Assert
+            Assert.Throws<PersistentException>(() => _business.List("idpais = 1", "name", 1, 0));
         }
 
         /// <summary>
         /// Prueba la consulta de una ciudad dado su identificador
         /// </summary>
         [Fact]
-        public void CityReadTest()
+        public void ReadTest()
         {
+            //Arrange
             City city = new() { Id = 1 };
-            city = _business.Read(city, connectionFake);
 
+            //Act
+            city = _business.Read(city);
+
+            //Assert
             Assert.Equal("BOG", city.Code);
         }
 
@@ -123,11 +117,15 @@ namespace Business.Test.Config
         /// Prueba la consulta de una ciudad que no existe dado su identificador
         /// </summary>
         [Fact]
-        public void CityReadNotFoundTest()
+        public void ReadNotFoundTest()
         {
+            //Arrange
             City city = new() { Id = 10 };
-            city = _business.Read(city, connectionFake);
 
+            //Act
+            city = _business.Read(city);
+
+            //Assert
             Assert.Equal(0, city.Id);
         }
 
@@ -135,38 +133,46 @@ namespace Business.Test.Config
         /// Prueba la inserción de una ciudad
         /// </summary>
         [Fact]
-        public void CityInsertTest()
+        public void InsertTest()
         {
+            //Arrange
             City city = new() { Country = new() { Id = 1 }, Code = "BUC", Name = "Bucaramanga" };
-            city = _business.Insert(city, new() { Id = 1 }, connectionFake);
 
+            //Act
+            city = _business.Insert(city, new() { Id = 1 });
+
+            //Assert
             Assert.NotEqual(0, city.Id);
         }
 
         /// <summary>
         /// Prueba la inserción de una ciudad con código duplicado
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
-        public void CityInsertDuplicateTest()
+        public void InsertDuplicateTest()
         {
+            //Arrange
             City city = new() { Country = new() { Id = 1 }, Code = "BOG", Name = "Prueba 1" };
 
-            _ = Assert.Throws<PersistentException>(() => _business.Insert(city, new() { Id = 1 }, connectionFake));
+            //Act, Assert
+            _ = Assert.Throws<PersistentException>(() => _business.Insert(city, new() { Id = 1 }));
         }
 
         /// <summary>
         /// Prueba la actualización de una ciudad
         /// </summary>
         [Fact]
-        public void CityUpdateTest()
+        public void UpdateTest()
         {
+            //Arrange
             City city = new() { Id = 2, Country = new() { Id = 1 }, Code = "BAQ", Name = "Barranquilla" };
-            _ = _business.Update(city, new() { Id = 1 }, connectionFake);
-
             City city2 = new() { Id = 2 };
-            city2 = _business.Read(city2, connectionFake);
 
+            //Act
+            _ = _business.Update(city, new() { Id = 1 });
+            city2 = _business.Read(city2);
+
+            //Assert
             Assert.NotEqual("MED", city2.Code);
         }
 
@@ -174,14 +180,17 @@ namespace Business.Test.Config
         /// Prueba la eliminación de una ciudad
         /// </summary>
         [Fact]
-        public void CityDeleteTest()
+        public void DeleteTest()
         {
+            //Arrange
             City city = new() { Id = 3 };
-            _ = _business.Delete(city, new() { Id = 1 }, connectionFake);
-
             City city2 = new() { Id = 3 };
-            city2 = _business.Read(city2, connectionFake);
 
+            //Act
+            _ = _business.Delete(city, new() { Id = 1 });
+            city2 = _business.Read(city2);
+
+            //Assert
             Assert.Equal(0, city2.Id);
         }
         #endregion
