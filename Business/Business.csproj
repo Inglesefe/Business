@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Dal" Version="1.0.25" />
-    <PackageReference Include="MailKit" Version="4.1.0" />
+    <PackageReference Include="Dal" Version="1.0.34" />
+    <PackageReference Include="MailKit" Version="4.2.0" />
   </ItemGroup>
 
 </Project>

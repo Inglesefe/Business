@@ -22,6 +22,7 @@ namespace Business.Test.Util
         /// </summary>
         public CryptoTest()
         {
+            //Arrange
             _configuration = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", false, false)
                 .AddEnvironmentVariables()
@@ -36,8 +37,10 @@ namespace Business.Test.Util
         [Fact]
         public void DecryptTest()
         {
+            //Act
             string plainText = Crypto.Decrypt("FLWnwyoEz/7tYsnS+vxTVg==", _configuration["Aes:Key"] ?? "", _configuration["Aes:IV"] ?? "");
 
+            //Assert
             Assert.Equal("Prueba123", plainText);
         }
 
@@ -47,8 +50,10 @@ namespace Business.Test.Util
         [Fact]
         public void EncryptTest()
         {
+            //Act
             string cryptedText = Crypto.Encrypt("Prueba123", _configuration["Aes:Key"] ?? "", _configuration["Aes:IV"] ?? "");
 
+            //Assert
             Assert.Equal("FLWnwyoEz/7tYsnS+vxTVg==", cryptedText);
         }
         #endregion

@@ -20,11 +20,6 @@ namespace Business.Test.Noti
         /// Capa de negocio de las plantillas
         /// </summary>
         private readonly BusinessTemplate _business;
-
-        /// <summary>
-        /// Conexión a la base de datos falsa
-        /// </summary>
-        private readonly IDbConnection connectionFake;
         #endregion
 
         #region Constructors
@@ -33,35 +28,29 @@ namespace Business.Test.Noti
         /// </summary>
         public TemplateTest()
         {
+            //Arrange
             Mock<IPersistentWithLog<Template>> mock = new();
-            Mock<IDbConnection> mockConnection = new();
-            connectionFake = mockConnection.Object;
-
             List<Template> templates = new()
             {
                 new Template() { Id = 1, Name = "Plantilla de prueba", Content = "<h1>Esta es una prueba hecha por #{user}#</h1>" },
                 new Template() { Id = 2, Name = "Plantilla a actualizar", Content = "<h1>Esta es una prueba hecha para #{actualizar}#</h1>" },
                 new Template() { Id = 3, Name = "Plantilla a eliminar", Content = "<h1>Esta es una prueba hecha para #{eliminar}#</h1>" }
             };
-
-            mock.Setup(p => p.List("idtemplate = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
+            mock.Setup(p => p.List("idtemplate = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
                 .Returns(new ListResult<Template>(templates.Where(y => y.Id == 1).ToList(), 1));
-            mock.Setup(p => p.List("idplantilla = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
+            mock.Setup(p => p.List("idplantilla = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
                 .Throws<PersistentException>();
-
-            mock.Setup(p => p.Read(It.IsAny<Template>(), It.IsAny<IDbConnection>()))
-                .Returns((Template template, IDbConnection connection) => templates.Find(x => x.Id == template.Id) ?? new Template());
-
-            mock.Setup(p => p.Insert(It.IsAny<Template>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
-                .Returns((Template template, User user, IDbConnection connection) =>
+            mock.Setup(p => p.Read(It.IsAny<Template>()))
+                .Returns((Template template) => templates.Find(x => x.Id == template.Id) ?? new Template());
+            mock.Setup(p => p.Insert(It.IsAny<Template>(), It.IsAny<User>()))
+                .Returns((Template template, User user) =>
                 {
                     template.Id = templates.Count + 1;
                     templates.Add(template);
                     return template;
                 });
-
-            mock.Setup(p => p.Update(It.IsAny<Template>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
-                .Returns((Template template, User user, IDbConnection connection) =>
+            mock.Setup(p => p.Update(It.IsAny<Template>(), It.IsAny<User>()))
+                .Returns((Template template, User user) =>
                 {
                     templates.Where(x => x.Id == template.Id).ToList().ForEach(x =>
                     {
@@ -70,14 +59,12 @@ namespace Business.Test.Noti
                     });
                     return template;
                 });
-
-            mock.Setup(p => p.Delete(It.IsAny<Template>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
-                .Returns((Template template, User user, IDbConnection connection) =>
+            mock.Setup(p => p.Delete(It.IsAny<Template>(), It.IsAny<User>()))
+                .Returns((Template template, User user) =>
                 {
                     templates = templates.Where(x => x.Id != template.Id).ToList();
                     return template;
                 });
-
             _business = new(mock.Object);
         }
         #endregion
@@ -86,12 +73,13 @@ namespace Business.Test.Noti
         /// <summary>
         /// Prueba la consulta de un listado de plantillas con filtros, ordenamientos y límite
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
-        public void TemplateListTest()
+        public void ListTest()
         {
-            ListResult<Template> list = _business.List("idtemplate = 1", "name", 1, 0, connectionFake);
+            //Act
+            ListResult<Template> list = _business.List("idtemplate = 1", "name", 1, 0);
 
+            //Assert
             Assert.NotEmpty(list.List);
             Assert.True(list.Total > 0);
         }
@@ -99,99 +87,115 @@ namespace Business.Test.Noti
         /// <summary>
         /// Prueba la consulta de un listado de plantillas con filtros, ordenamientos y límite y con errores
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
-        public void TemplateListWithErrorTest()
+        public void ListWithErrorTest()
         {
-            Assert.Throws<PersistentException>(() => _business.List("idplantilla = 1", "name", 1, 0, connectionFake));
+            //Act, Assert
+            Assert.Throws<PersistentException>(() => _business.List("idplantilla = 1", "name", 1, 0));
         }
 
         /// <summary>
         /// Prueba la consulta de una plantilla dada su identificador
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
-        public void TemplateReadTest()
+        public void ReadTest()
         {
+            //Arrange
             Template application = new() { Id = 1 };
-            application = _business.Read(application, connectionFake);
 
+            //Act
+            application = _business.Read(application);
+
+            //Assert
             Assert.Equal("Plantilla de prueba", application.Name);
         }
 
         /// <summary>
         /// Prueba la consulta de una plantilla que no existe dado su identificador
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
-        public void TemplateReadNotFoundTest()
+        public void ReadNotFoundTest()
         {
+            //Arrange
             Template application = new() { Id = 10 };
-            application = _business.Read(application, connectionFake);
 
+            //Act
+            application = _business.Read(application);
+
+            //Assert
             Assert.Equal(0, application.Id);
         }
 
         /// <summary>
         /// Prueba la inserción de una plantilla
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
-        public void TemplateInsertTest()
+        public void InsertTest()
         {
+            //Arrange
             Template template = new() { Name = "Prueba 1" };
-            template = _business.Insert(template, new() { Id = 1 }, connectionFake);
 
+            //Act
+            template = _business.Insert(template, new() { Id = 1 });
+
+            //Assert
             Assert.NotEqual(0, template.Id);
         }
 
         /// <summary>
         /// Prueba la actualización de una plantilla
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
-        public void TemplateUpdateTest()
+        public void UpdateTest()
         {
+            //Arrange
             Template template = new() { Id = 2, Name = "Prueba actualizar" };
-            _ = _business.Update(template, new() { Id = 1 }, connectionFake);
-
             Template template2 = new() { Id = 2 };
-            template2 = _business.Read(template2, connectionFake);
 
+            //Act
+            _ = _business.Update(template, new() { Id = 1 });
+            template2 = _business.Read(template2);
+
+            //Assert
             Assert.NotEqual("Plantilla a actualizar", template2.Name);
         }
 
         /// <summary>
         /// Prueba la eliminación de una plantilla
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
-        public void TemplateDeleteTest()
+        public void DeleteTest()
         {
+            //Arrange
             Template template = new() { Id = 3 };
-            _ = _business.Delete(template, new() { Id = 1 }, connectionFake);
-
             Template template2 = new() { Id = 3 };
-            template2 = _business.Read(template2, connectionFake);
 
+            //Act
+            _ = _business.Delete(template, new() { Id = 1 });
+            template2 = _business.Read(template2);
+
+            //Assert
             Assert.Equal(0, template2.Id);
         }
 
         /// <summary>
         /// Prueba el reemplazo de las variables en el contenido de la plantilla
         /// </summary>
-        /// <returns>N/A</returns>
         [Fact]
-        public void TemplateReplacedVariablesTest()
+        public void ReplacedVariablesTest()
         {
+            //Arrange
             Template template = new() { Id = 1 };
-            template = _business.Read(template, connectionFake);
+            template = _business.Read(template);
             IDictionary<string, string> data = new Dictionary<string, string>
             {
                 { "user", "leandrobaena@gmail.com" }
             };
+
+            //Act
             template = BusinessTemplate.ReplacedVariables(template, data);
 
+            //Assert
             Assert.Equal("<h1>Esta es una prueba hecha por leandrobaena@gmail.com</h1>", template.Content);
         }
         #endregion

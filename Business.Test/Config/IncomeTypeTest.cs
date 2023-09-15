@@ -20,11 +20,6 @@ namespace Business.Test.Config
         /// Capa de negocio de los tipos de ingreso
         /// </summary>
         private readonly BusinessIncomeType _business;
-
-        /// <summary>
-        /// Conexión a la base de datos falsa
-        /// </summary>
-        private readonly IDbConnection connectionFake;
         #endregion
 
         #region Constructors
@@ -33,27 +28,22 @@ namespace Business.Test.Config
         /// </summary>
         public IncomeTypeTest()
         {
+            //Arrange
             Mock<IPersistentWithLog<IncomeType>> mock = new();
-            Mock<IDbConnection> mockConnection = new();
-            connectionFake = mockConnection.Object;
-
             List<IncomeType> incomeTypes = new()
             {
                 new IncomeType() { Id = 1, Code = "CI", Name = "Cuota inicial" },
                 new IncomeType() { Id = 2, Code = "CR", Name = "Crédito cartera" },
                 new IncomeType() { Id = 3, Code = "FC", Name = "Factura" }
             };
-
-            mock.Setup(p => p.List("idincometype = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
+            mock.Setup(p => p.List("idincometype = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
                 .Returns(new ListResult<IncomeType>(incomeTypes.Where(y => y.Id == 1).ToList(), 1));
-            mock.Setup(p => p.List("idtipoingreso = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
+            mock.Setup(p => p.List("idtipoingreso = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
                 .Throws<PersistentException>();
-
-            mock.Setup(p => p.Read(It.IsAny<IncomeType>(), It.IsAny<IDbConnection>()))
-                .Returns((IncomeType incomeType, IDbConnection connection) => incomeTypes.Find(x => x.Id == incomeType.Id) ?? new IncomeType());
-
-            mock.Setup(p => p.Insert(It.IsAny<IncomeType>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
-                .Returns((IncomeType incomeType, User user, IDbConnection connection) =>
+            mock.Setup(p => p.Read(It.IsAny<IncomeType>()))
+                .Returns((IncomeType incomeType) => incomeTypes.Find(x => x.Id == incomeType.Id) ?? new IncomeType());
+            mock.Setup(p => p.Insert(It.IsAny<IncomeType>(), It.IsAny<User>()))
+                .Returns((IncomeType incomeType, User user) =>
                 {
                     if (incomeTypes.Exists(x => x.Code == incomeType.Code))
                     {
@@ -66,21 +56,18 @@ namespace Business.Test.Config
                         return incomeType;
                     }
                 });
-
-            mock.Setup(p => p.Update(It.IsAny<IncomeType>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
-                .Returns((IncomeType incomeType, User user, IDbConnection connection) =>
+            mock.Setup(p => p.Update(It.IsAny<IncomeType>(), It.IsAny<User>()))
+                .Returns((IncomeType incomeType, User user) =>
                 {
                     incomeTypes.Where(x => x.Id == incomeType.Id).ToList().ForEach(x => x.Name = incomeType.Name);
                     return incomeType;
                 });
-
-            mock.Setup(p => p.Delete(It.IsAny<IncomeType>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
-                .Returns((IncomeType incomeType, User user, IDbConnection connection) =>
+            mock.Setup(p => p.Delete(It.IsAny<IncomeType>(), It.IsAny<User>()))
+                .Returns((IncomeType incomeType, User user) =>
                 {
                     incomeTypes = incomeTypes.Where(x => x.Id != incomeType.Id).ToList();
                     return incomeType;
                 });
-
             _business = new(mock.Object);
         }
         #endregion
@@ -90,10 +77,12 @@ namespace Business.Test.Config
         /// Prueba la consulta de un listado de tipos de ingreso con filtros, ordenamientos y límite
         /// </summary>
         [Fact]
-        public void IncomeTypeListTest()
+        public void ListTest()
         {
-            ListResult<IncomeType> list = _business.List("idincometype = 1", "name", 1, 0, connectionFake);
+            //Act
+            ListResult<IncomeType> list = _business.List("idincometype = 1", "name", 1, 0);
 
+            //Assert
             Assert.NotEmpty(list.List);
             Assert.True(list.Total > 0);
         }
@@ -102,20 +91,25 @@ namespace Business.Test.Config
         /// Prueba la consulta de un listado de tipos de ingreso con filtros, ordenamientos y límite y con errores
         /// </summary>
         [Fact]
-        public void IncomeTypeListWithErrorTest()
+        public void ListWithErrorTest()
         {
-            Assert.Throws<PersistentException>(() => _business.List("idtipoingreso = 1", "name", 1, 0, connectionFake));
+            //Act, Assert
+            Assert.Throws<PersistentException>(() => _business.List("idtipoingreso = 1", "name", 1, 0));
         }
 
         /// <summary>
         /// Prueba la consulta de un tipo de ingreso dado su identificador
         /// </summary>
         [Fact]
-        public void IncomeTypeReadTest()
+        public void ReadTest()
         {
+            //Arrange
             IncomeType incomeType = new() { Id = 1 };
-            incomeType = _business.Read(incomeType, connectionFake);
 
+            //Act
+            incomeType = _business.Read(incomeType);
+
+            //Assert
             Assert.Equal("CI", incomeType.Code);
         }
 
@@ -123,11 +117,15 @@ namespace Business.Test.Config
         /// Prueba la consulta de un tipo de ingreso que no existe dado su identificador
         /// </summary>
         [Fact]
-        public void IncomeTypeReadNotFoundTest()
+        public void ReadNotFoundTest()
         {
+            //Arrange
             IncomeType incomeType = new() { Id = 10 };
-            incomeType = _business.Read(incomeType, connectionFake);
 
+            //Act
+            incomeType = _business.Read(incomeType);
+
+            //Assert
             Assert.Equal(0, incomeType.Id);
         }
 
@@ -135,11 +133,15 @@ namespace Business.Test.Config
         /// Prueba la inserción de un tipo de ingreso
         /// </summary>
         [Fact]
-        public void IncomeTypeInsertTest()
+        public void InsertTest()
         {
+            //Arrange
             IncomeType incomeType = new() { Code = "CF", Name = "Cheques posfechados" };
-            incomeType = _business.Insert(incomeType, new() { Id = 1 }, connectionFake);
 
+            //Act
+            incomeType = _business.Insert(incomeType, new() { Id = 1 });
+
+            //Assert
             Assert.NotEqual(0, incomeType.Id);
         }
 
@@ -147,14 +149,17 @@ namespace Business.Test.Config
         /// Prueba la actualización de un tipo de ingreso
         /// </summary>
         [Fact]
-        public void IncomeTypeUpdateTest()
+        public void UpdateTest()
         {
+            //Arrange
             IncomeType incomeType = new() { Id = 2, Code = "CT", Name = "Otro ingreso" };
-            _ = _business.Update(incomeType, new() { Id = 1 }, connectionFake);
-
             IncomeType incomeType2 = new() { Id = 2 };
-            incomeType2 = _business.Read(incomeType2, connectionFake);
 
+            //Act
+            _ = _business.Update(incomeType, new() { Id = 1 });
+            incomeType2 = _business.Read(incomeType2);
+
+            //Assert
             Assert.NotEqual("Credito cartera", incomeType2.Name);
         }
 
@@ -162,14 +167,17 @@ namespace Business.Test.Config
         /// Prueba la eliminación de un tipo de ingreso
         /// </summary>
         [Fact]
-        public void IncomeTypeDeleteTest()
+        public void DeleteTest()
         {
+            //Arrange
             IncomeType incomeType = new() { Id = 3 };
-            _ = _business.Delete(incomeType, new() { Id = 1 }, connectionFake);
-
             IncomeType incomeType2 = new() { Id = 3 };
-            incomeType2 = _business.Read(incomeType2, connectionFake);
 
+            //Act
+            _ = _business.Delete(incomeType, new() { Id = 1 });
+            incomeType2 = _business.Read(incomeType2);
+
+            //Assert
             Assert.Equal(0, incomeType2.Id);
         }
         #endregion

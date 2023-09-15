@@ -20,11 +20,6 @@ namespace Business.Test.Config
         /// Capa de negocio de los tipos de identificación
         /// </summary>
         private readonly BusinessIdentificationType _business;
-
-        /// <summary>
-        /// Conexión a la base de datos falsa
-        /// </summary>
-        private readonly IDbConnection connectionFake;
         #endregion
 
         #region Constructors
@@ -33,27 +28,22 @@ namespace Business.Test.Config
         /// </summary>
         public IdentificationTypeTest()
         {
+            //Arrange
             Mock<IPersistentWithLog<IdentificationType>> mock = new();
-            Mock<IDbConnection> mockConnection = new();
-            connectionFake = mockConnection.Object;
-
             List<IdentificationType> identificationTypes = new()
             {
                 new IdentificationType() { Id = 1, Name = "Cédula ciudadanía" },
                 new IdentificationType() { Id = 2, Name = "Cédula extranjería" },
                 new IdentificationType() { Id = 3, Name = "Pasaporte" }
             };
-
-            mock.Setup(p => p.List("ididentificationtype = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
+            mock.Setup(p => p.List("ididentificationtype = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
                 .Returns(new ListResult<IdentificationType>(identificationTypes.Where(y => y.Id == 1).ToList(), 1));
-            mock.Setup(p => p.List("idtipoidentificacion = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IDbConnection>()))
+            mock.Setup(p => p.List("idtipoidentificacion = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
                 .Throws<PersistentException>();
-
-            mock.Setup(p => p.Read(It.IsAny<IdentificationType>(), It.IsAny<IDbConnection>()))
-                .Returns((IdentificationType identificationType, IDbConnection connection) => identificationTypes.Find(x => x.Id == identificationType.Id) ?? new IdentificationType());
-
-            mock.Setup(p => p.Insert(It.IsAny<IdentificationType>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
-                .Returns((IdentificationType identificationType, User user, IDbConnection connection) =>
+            mock.Setup(p => p.Read(It.IsAny<IdentificationType>()))
+                .Returns((IdentificationType identificationType) => identificationTypes.Find(x => x.Id == identificationType.Id) ?? new IdentificationType());
+            mock.Setup(p => p.Insert(It.IsAny<IdentificationType>(), It.IsAny<User>()))
+                .Returns((IdentificationType identificationType, User user) =>
                 {
                     if (identificationTypes.Exists(x => x.Name == identificationType.Name))
                     {
@@ -66,21 +56,18 @@ namespace Business.Test.Config
                         return identificationType;
                     }
                 });
-
-            mock.Setup(p => p.Update(It.IsAny<IdentificationType>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
-                .Returns((IdentificationType identificationType, User user, IDbConnection connection) =>
+            mock.Setup(p => p.Update(It.IsAny<IdentificationType>(), It.IsAny<User>()))
+                .Returns((IdentificationType identificationType, User user) =>
                 {
                     identificationTypes.Where(x => x.Id == identificationType.Id).ToList().ForEach(x => x.Name = identificationType.Name);
                     return identificationType;
                 });
-
-            mock.Setup(p => p.Delete(It.IsAny<IdentificationType>(), It.IsAny<User>(), It.IsAny<IDbConnection>()))
-                .Returns((IdentificationType identificationType, User user, IDbConnection connection) =>
+            mock.Setup(p => p.Delete(It.IsAny<IdentificationType>(), It.IsAny<User>()))
+                .Returns((IdentificationType identificationType, User user) =>
                 {
                     identificationTypes = identificationTypes.Where(x => x.Id != identificationType.Id).ToList();
                     return identificationType;
                 });
-
             _business = new(mock.Object);
         }
         #endregion
@@ -90,10 +77,12 @@ namespace Business.Test.Config
         /// Prueba la consulta de un listado de tipos de identificación con filtros, ordenamientos y límite
         /// </summary>
         [Fact]
-        public void IdentificationTypeListTest()
+        public void ListTest()
         {
-            ListResult<IdentificationType> list = _business.List("ididentificationtype = 1", "name", 1, 0, connectionFake);
+            //Act
+            ListResult<IdentificationType> list = _business.List("ididentificationtype = 1", "name", 1, 0);
 
+            //Assert
             Assert.NotEmpty(list.List);
             Assert.True(list.Total > 0);
         }
@@ -102,20 +91,25 @@ namespace Business.Test.Config
         /// Prueba la consulta de un listado de tipos de identificación con filtros, ordenamientos y límite y con errores
         /// </summary>
         [Fact]
-        public void IdentificationTypeListWithErrorTest()
+        public void ListWithErrorTest()
         {
-            Assert.Throws<PersistentException>(() => _business.List("idtipoidentificacion = 1", "name", 1, 0, connectionFake));
+            //Act, Assert
+            Assert.Throws<PersistentException>(() => _business.List("idtipoidentificacion = 1", "name", 1, 0));
         }
 
         /// <summary>
         /// Prueba la consulta de un tipo de identificación dado su identificador
         /// </summary>
         [Fact]
-        public void IdentificationTypeReadTest()
+        public void ReadTest()
         {
+            //Arrange
             IdentificationType identificationType = new() { Id = 1 };
-            identificationType = _business.Read(identificationType, connectionFake);
 
+            //Act
+            identificationType = _business.Read(identificationType);
+
+            //Assert
             Assert.Equal("Cédula ciudadanía", identificationType.Name);
         }
 
@@ -123,11 +117,15 @@ namespace Business.Test.Config
         /// Prueba la consulta de un tipo de identificación que no existe dado su identificador
         /// </summary>
         [Fact]
-        public void IdentificationTypeReadNotFoundTest()
+        public void ReadNotFoundTest()
         {
+            //Arrange
             IdentificationType identificationType = new() { Id = 10 };
-            identificationType = _business.Read(identificationType, connectionFake);
 
+            //Act
+            identificationType = _business.Read(identificationType);
+
+            //Assert
             Assert.Equal(0, identificationType.Id);
         }
 
@@ -135,11 +133,15 @@ namespace Business.Test.Config
         /// Prueba la inserción de un tipo de identificación
         /// </summary>
         [Fact]
-        public void IdentificationTypeInsertTest()
+        public void InsertTest()
         {
+            //Arrange
             IdentificationType identificationType = new() { Name = "Prueba 1" };
-            identificationType = _business.Insert(identificationType, new() { Id = 1 }, connectionFake);
 
+            //Act
+            identificationType = _business.Insert(identificationType, new() { Id = 1 });
+
+            //Assert
             Assert.NotEqual(0, identificationType.Id);
         }
 
@@ -147,14 +149,17 @@ namespace Business.Test.Config
         /// Prueba la actualización de un tipo de identificación
         /// </summary>
         [Fact]
-        public void IdentificationTypeUpdateTest()
+        public void UpdateTest()
         {
+            //Arrange
             IdentificationType identificationType = new() { Id = 2, Name = "Tarjeta de identidad" };
-            _ = _business.Update(identificationType, new() { Id = 1 }, connectionFake);
-
             IdentificationType identificationType2 = new() { Id = 2 };
-            identificationType2 = _business.Read(identificationType2, connectionFake);
 
+            //Act
+            identificationType2 = _business.Read(identificationType2);
+            _ = _business.Update(identificationType, new() { Id = 1 });
+
+            //Assert
             Assert.NotEqual("Cédula extranjería", identificationType2.Name);
         }
 
@@ -162,14 +167,17 @@ namespace Business.Test.Config
         /// Prueba la eliminación de un tipo de identificación
         /// </summary>
         [Fact]
-        public void IdentificationTypeDeleteTest()
+        public void DeleteTest()
         {
+            //Arrange
             IdentificationType identificationType = new() { Id = 3 };
-            _ = _business.Delete(identificationType, new() { Id = 1 }, connectionFake);
-
             IdentificationType identificationType2 = new() { Id = 3 };
-            identificationType2 = _business.Read(identificationType2, connectionFake);
 
+            //Act
+            _ = _business.Delete(identificationType, new() { Id = 1 });
+            identificationType2 = _business.Read(identificationType2);
+
+            //Assert
             Assert.Equal(0, identificationType2.Id);
         }
         #endregion
