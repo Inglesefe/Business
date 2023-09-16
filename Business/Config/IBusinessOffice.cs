@@ -8,7 +8,7 @@ namespace Business.Config
     /// <summary>
     /// Métodos propios de la persistencia de oficinas
     /// </summary>
-    public interface IBusinessOffice
+    public interface IBusinessOffice : IBusiness<Office>
     {
         #region Methods
         /// <summary>
