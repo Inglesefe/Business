@@ -41,30 +41,30 @@ namespace Business.Test.Admon
             mock.Setup(p => p.List("idescalamatricula = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
                 .Throws<PersistentException>();
             mock.Setup(p => p.Read(It.IsAny<RegistrationScale>()))
-                .Returns((RegistrationScale executive) => registrationScales.Find(x => x.Id == executive.Id) ?? new RegistrationScale());
+                .Returns((RegistrationScale regScale) => registrationScales.Find(x => x.Id == regScale.Id) ?? new RegistrationScale());
             mock.Setup(p => p.Insert(It.IsAny<RegistrationScale>(), It.IsAny<User>()))
-                .Returns((RegistrationScale executive, User user) =>
+                .Returns((RegistrationScale regScale, User user) =>
                 {
-                    executive.Id = registrationScales.Count + 1;
-                    registrationScales.Add(executive);
-                    return executive;
+                    regScale.Id = registrationScales.Count + 1;
+                    registrationScales.Add(regScale);
+                    return regScale;
                 });
             mock.Setup(p => p.Update(It.IsAny<RegistrationScale>(), It.IsAny<User>()))
-                .Returns((RegistrationScale executive, User user) =>
+                .Returns((RegistrationScale regScale, User user) =>
                 {
-                    registrationScales.Where(x => x.Id == executive.Id).ToList().ForEach(x =>
+                    registrationScales.Where(x => x.Id == regScale.Id).ToList().ForEach(x =>
                     {
-                        x.Registration = executive.Registration;
-                        x.Scale = executive.Scale;
-                        x.AccountExecutive = executive.AccountExecutive;
+                        x.Registration = regScale.Registration;
+                        x.Scale = regScale.Scale;
+                        x.AccountExecutive = regScale.AccountExecutive;
                     });
-                    return executive;
+                    return regScale;
                 });
             mock.Setup(p => p.Delete(It.IsAny<RegistrationScale>(), It.IsAny<User>()))
-                .Returns((RegistrationScale executive, User user) =>
+                .Returns((RegistrationScale regScale, User user) =>
                 {
-                    registrationScales = registrationScales.Where(x => x.Id != executive.Id).ToList();
-                    return executive;
+                    registrationScales = registrationScales.Where(x => x.Id != regScale.Id).ToList();
+                    return regScale;
                 });
             _business = new(mock.Object);
         }
@@ -114,7 +114,7 @@ namespace Business.Test.Admon
         }
 
         /// <summary>
-        /// Prueba la consulta de un ejecutivo de cuenta que no existe dado su identificador
+        /// Prueba la consulta de una escala asociada a matrícula que no existe dado su identificador
         /// </summary>
         [Fact]
         public void ReadNotFoundTest()
@@ -130,7 +130,7 @@ namespace Business.Test.Admon
         }
 
         /// <summary>
-        /// Prueba la inserción de un ejecutivo de cuenta
+        /// Prueba la inserción de una escala asociada a matrícula
         /// </summary>
         [Fact]
         public void InsertTest()
@@ -146,7 +146,7 @@ namespace Business.Test.Admon
         }
 
         /// <summary>
-        /// Prueba la actualización de un ejecutivo de cuenta
+        /// Prueba la actualización de una escala asociada a matrícula
         /// </summary>
         [Fact]
         public void UpdateTest()
@@ -165,7 +165,7 @@ namespace Business.Test.Admon
         }
 
         /// <summary>
-        /// Prueba la eliminación de un ejecutivo de cuenta
+        /// Prueba la eliminación de una escala asociada a matrícula
         /// </summary>
         [Fact]
         public void DeleteTest()
