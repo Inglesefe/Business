@@ -3,7 +3,7 @@ using Dal;
 using Dal.Dto;
 using Dal.Exceptions;
 using Entities.Auth;
-using Entities.Config;
+using Entities.Cont;
 using Moq;
 using System.Data;
 
