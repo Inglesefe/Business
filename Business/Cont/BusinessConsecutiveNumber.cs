@@ -1,5 +1,5 @@
 ﻿using Dal;
-using Entities.Config;
+using Entities.Cont;
 
 namespace Business.Cont
 {
