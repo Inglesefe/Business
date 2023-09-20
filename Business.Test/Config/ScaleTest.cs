@@ -32,9 +32,9 @@ namespace Business.Test.Config
             Mock<IPersistentWithLog<Scale>> mock = new();
             List<Scale> scales = new()
             {
-                new Scale() { Id = 1, Name = "Comisión 1", Comission = 1000, Validity = DateTime.Now },
-                new Scale() { Id = 2, Name = "Comisión 2", Comission = 2000, Validity = DateTime.Now },
-                new Scale() { Id = 3, Name = "Comisión 3", Comission = 3000, Validity = DateTime.Now }
+                new Scale() { Id = 1, Code = "C1", Name = "Comisión 1", Comission = 1000, Order = 1 },
+                new Scale() { Id = 2, Code = "C2", Name = "Comisión 2", Comission = 2000, Order = 2 },
+                new Scale() { Id = 3, Code = "C3", Name = "Comisión 3", Comission = 3000, Order = 3 }
             };
             mock.Setup(p => p.List("idscale = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
                 .Returns(new ListResult<Scale>(scales.Where(y => y.Id == 1).ToList(), 1));
@@ -54,9 +54,10 @@ namespace Business.Test.Config
                 {
                     scales.Where(x => x.Id == scale.Id).ToList().ForEach(x =>
                     {
+                        x.Code = scale.Code;
                         x.Name = scale.Name;
                         x.Comission = scale.Comission;
-                        x.Validity = scale.Validity;
+                        x.Order = scale.Order;
                     });
                     return scale;
                 });
@@ -134,7 +135,7 @@ namespace Business.Test.Config
         public void InsertTest()
         {
             //Arrange
-            Scale scale = new() { Name = "Nueva escala", Comission = 4000, Validity = DateTime.Now };
+            Scale scale = new() { Code = "C4", Name = "Nueva escala", Comission = 4000, Order = 4 };
 
             //Act
             scale = _business.Insert(scale, new() { Id = 1 });
@@ -150,7 +151,7 @@ namespace Business.Test.Config
         public void UpdateTest()
         {
             //Arrange
-            Scale scale = new() { Id = 2, Name = "Comisión actualizada", Comission = 5000, Validity = DateTime.Now };
+            Scale scale = new() { Id = 2, Code = "C5", Name = "Comisión actualizada", Comission = 5000, Order = 5 };
             Scale scale2 = new() { Id = 2 };
 
             //Act
