@@ -431,7 +431,7 @@ namespace Business.Test.Auth
         public void DeleteApplicationWithErrorTest()
         {
             //Act, Assert
-            Assert.Throws<PersistentException>(() => _business.DeleteUser(new() { Id = 1 }, new() { Id = -2 }, new() { Id = 1 }));
+            Assert.Throws<PersistentException>(() => _business.DeleteApplication(new() { Id = 1 }, new() { Id = -2 }, new() { Id = 1 }));
         }
 
         /// <summary>
@@ -441,7 +441,7 @@ namespace Business.Test.Auth
         public void DeleteApplicationWithError2Test()
         {
             //Act, Assert
-            Assert.Throws<BusinessException>(() => _business.DeleteUser(new() { Id = 1 }, new() { Id = -1 }, new() { Id = 1 }));
+            Assert.Throws<BusinessException>(() => _business.DeleteApplication(new() { Id = 1 }, new() { Id = -1 }, new() { Id = 1 }));
         }
         #endregion
     }
