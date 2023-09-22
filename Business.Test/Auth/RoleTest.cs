@@ -397,7 +397,7 @@ namespace Business.Test.Auth
         public void InsertApplicationDuplicateTest()
         {
             //Act, Assert
-            _ = Assert.Throws<PersistentException>(() => _business.InsertUser(new() { Id = 2 }, new() { Id = 1 }, new() { Id = 1 }));
+            _ = Assert.Throws<PersistentException>(() => _business.InsertApplication(new() { Id = 1 }, new() { Id = 1 }, new() { Id = 1 }));
         }
 
         /// <summary>
@@ -407,7 +407,7 @@ namespace Business.Test.Auth
         public void InsertApplicationWithErrorTest()
         {
             //Act, Assert
-            _ = Assert.Throws<BusinessException>(() => _business.InsertUser(new() { Id = 1 }, new() { Id = -1 }, new() { Id = 1 }));
+            _ = Assert.Throws<BusinessException>(() => _business.InsertApplication(new() { Id = 1 }, new() { Id = -1 }, new() { Id = 1 }));
         }
 
         /// <summary>
