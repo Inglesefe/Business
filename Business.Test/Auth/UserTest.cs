@@ -1,4 +1,5 @@
 ﻿using Business.Auth;
+using Business.Exceptions;
 using Dal.Auth;
 using Dal.Dto;
 using Dal.Exceptions;
@@ -61,29 +62,73 @@ namespace Business.Test.Auth
                 new Tuple<User, Role>(users[1], roles[1])
             };
             mock.Setup(p => p.ReadByLoginAndPassword(It.IsAny<User>(), It.IsAny<string>()))
-                .Returns((User user, string password) => users.Find(x => x.Login == user.Login && password == "Prueba123" && x.Active) ?? new User());
+                .Returns((User user, string password) =>
+                {
+                    if (user.Id == -1)
+                    {
+                        throw new BusinessException();
+                    }
+                    if (user.Id == -2)
+                    {
+                        throw new PersistentException();
+                    }
+                    return users.Find(x => x.Login == user.Login && password == "Prueba123" && x.Active) ?? new User();
+                });
             mock.Setup(p => p.ReadByLogin(It.IsAny<User>()))
-                .Returns((User user) => users.Find(x => x.Login == user.Login) ?? new User());
+                .Returns((User user) =>
+                {
+                    if (user.Id == -1)
+                    {
+                        throw new BusinessException();
+                    }
+                    if (user.Id == -2)
+                    {
+                        throw new PersistentException();
+                    }
+                    return users.Find(x => x.Login == user.Login) ?? new User();
+                });
             mock.Setup(p => p.UpdatePassword(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<User>()))
                 .Returns((User user, string password, User user1) =>
                 {
+                    if (user.Id == -1)
+                    {
+                        throw new BusinessException();
+                    }
+                    if (user.Id == -2)
+                    {
+                        throw new PersistentException();
+                    }
                     return user;
                 });
             mock.Setup(p => p.ListRoles("", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<User>()))
                 .Returns(new ListResult<Role>(users_roles.Where(x => x.Item1.Id == 1).Select(x => x.Item2).ToList(), 1));
-            mock.Setup(p => p.ListRoles("r.idrole = 2", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<User>()))
+            mock.Setup(p => p.ListRoles("idrole = 2", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<User>()))
                 .Returns(new ListResult<Role>(new List<Role>(), 0));
             mock.Setup(p => p.ListRoles("idusuario = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<User>()))
                 .Throws<PersistentException>();
+            mock.Setup(p => p.ListRoles("error", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<User>()))
+                .Throws<BusinessException>();
             mock.Setup(p => p.ListNotRoles(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<User>()))
                 .Returns((string filters, string orders, int limit, int offset, User user) =>
                 {
+                    if (user.Id == -1)
+                    {
+                        throw new BusinessException();
+                    }
+                    if (user.Id == -2)
+                    {
+                        throw new PersistentException();
+                    }
                     List<Role> result = roles.Where(x => !users_roles.Exists(y => y.Item1.Id == user.Id && y.Item2.Id == x.Id)).ToList();
                     return new ListResult<Role>(result, result.Count);
                 });
             mock.Setup(p => p.InsertRole(It.IsAny<Role>(), It.IsAny<User>(), It.IsAny<User>())).
                 Returns((Role role, User user, User user1) =>
                 {
+                    if (user.Id == -1)
+                    {
+                        throw new BusinessException();
+                    }
                     if (users_roles.Exists(x => x.Item1.Id == user.Id && x.Item2.Id == role.Id))
                     {
                         throw new PersistentException();
@@ -93,6 +138,19 @@ namespace Business.Test.Auth
                         users_roles.Add(new Tuple<User, Role>(user, role));
                         return role;
                     }
+                });
+            mock.Setup(p => p.DeleteRole(It.IsAny<Role>(), It.IsAny<User>(), It.IsAny<User>())).
+                Returns((Role role, User user, User user1) =>
+                {
+                    if (user.Id == -1)
+                    {
+                        throw new BusinessException();
+                    }
+                    if (user.Id == -2)
+                    {
+                        throw new PersistentException();
+                    }
+                    return role;
                 });
             _business = new(mock.Object);
         }
@@ -132,6 +190,26 @@ namespace Business.Test.Auth
         }
 
         /// <summary>
+        /// Prueba la consulta de un usuario dado su login y contraseña con error de persistencia
+        /// </summary>
+        [Fact]
+        public void ReadByLoginAndPasswordWithError2Test()
+        {
+            //Act, Assert
+            Assert.Throws<PersistentException>(() => _business.ReadByLoginAndPassword(new() { Id = -2 }, "", _configuration["Aes:Key"] ?? "", _configuration["Aes:IV"] ?? ""));
+        }
+
+        /// <summary>
+        /// Prueba la consulta de un usuario dado su login y contraseña con error de negocio
+        /// </summary>
+        [Fact]
+        public void ReadByLoginAndPasswordWithError3Test()
+        {
+            //Act, Assert
+            Assert.Throws<BusinessException>(() => _business.ReadByLoginAndPassword(new() { Id = -1 }, "", _configuration["Aes:Key"] ?? "", _configuration["Aes:IV"] ?? ""));
+        }
+
+        /// <summary>
         /// Prueba la consulta de un usuario dado su login
         /// </summary>
         [Fact]
@@ -164,6 +242,26 @@ namespace Business.Test.Auth
         }
 
         /// <summary>
+        /// Prueba la consulta de un usuario dado su login con error de persistencia
+        /// </summary>
+        [Fact]
+        public void ReadByLoginWithErrorTest()
+        {
+            //Act, Assert
+            Assert.Throws<PersistentException>(() => _business.ReadByLogin(new() { Id = -2 }));
+        }
+
+        /// <summary>
+        /// Prueba la consulta de un usuario dado su login con error de negocio
+        /// </summary>
+        [Fact]
+        public void ReadByLoginWithError2Test()
+        {
+            //Act, Assert
+            Assert.Throws<BusinessException>(() => _business.ReadByLogin(new() { Id = -1 }));
+        }
+
+        /// <summary>
         /// Prueba la actualización de la contraseña de un usuario
         /// </summary>
         [Fact]
@@ -178,6 +276,26 @@ namespace Business.Test.Auth
 
             //Assert
             Assert.NotEqual(0, user.Id);
+        }
+
+        /// <summary>
+        /// Prueba la actualización de la contraseña de un usuario con error de persitencia
+        /// </summary>
+        [Fact]
+        public void UpdatePasswordWithErrorTest()
+        {
+            //Act, Assert
+            Assert.Throws<PersistentException>(() => _business.UpdatePassword(new() { Id = -2 }, "", _configuration["Aes:Key"] ?? "", _configuration["Aes:IV"] ?? "", new() { Id = 1 }));
+        }
+
+        /// <summary>
+        /// Prueba la actualización de la contraseña de un usuario con error de negocio
+        /// </summary>
+        [Fact]
+        public void UpdatePasswordWithError2Test()
+        {
+            //Act, Assert
+            Assert.Throws<BusinessException>(() => _business.UpdatePassword(new() { Id = -1 }, "", "", "", new() { Id = 1 }));
         }
 
         /// <summary>
@@ -205,6 +323,16 @@ namespace Business.Test.Auth
         }
 
         /// <summary>
+        /// Prueba la consulta de un listado de roles de un usuario con filtros, ordenamientos y límite y con errores de negocio
+        /// </summary>
+        [Fact]
+        public void ListRolesWithError2Test()
+        {
+            //Act, Assert
+            _ = Assert.Throws<BusinessException>(() => _business.ListRoles("error", "name", 10, 0, new() { Id = -1 }));
+        }
+
+        /// <summary>
         /// Prueba la consulta de un listado de roles no asignados a un usuario con filtros, ordenamientos y límite
         /// </summary>
         [Fact]
@@ -216,6 +344,26 @@ namespace Business.Test.Auth
             //Assert
             Assert.NotEmpty(list.List);
             Assert.True(list.Total > 0);
+        }
+
+        /// <summary>
+        /// Prueba la consulta de un listado de roles no asociados a un usuario con filtros, ordenamientos y límite y con errores
+        /// </summary>
+        [Fact]
+        public void ListNotRolesWithErrorTest()
+        {
+            //Act, Assert
+            _ = Assert.Throws<PersistentException>(() => _business.ListNotRoles("", "", 10, 0, new() { Id = -2 }));
+        }
+
+        /// <summary>
+        /// Prueba la consulta de un listado de roles no asociados a un usuario con filtros, ordenamientos y límite y con errores de negocio
+        /// </summary>
+        [Fact]
+        public void ListNotRolesWithError2Test()
+        {
+            //Act, Assert
+            _ = Assert.Throws<BusinessException>(() => _business.ListNotRoles("", "", 10, 0, new() { Id = -1 }));
         }
 
         /// <summary>
@@ -242,6 +390,16 @@ namespace Business.Test.Auth
         }
 
         /// <summary>
+        /// Prueba la inserción de un rol con error de negocio
+        /// </summary>
+        [Fact]
+        public void InsertRoleWithErrorTest()
+        {
+            //Act, Assert
+            _ = Assert.Throws<BusinessException>(() => _business.InsertRole(new() { Id = 1 }, new() { Id = -1 }, new() { Id = 1 }));
+        }
+
+        /// <summary>
         /// Prueba la eliminación de un rol de un usuario
         /// </summary>
         [Fact]
@@ -249,10 +407,30 @@ namespace Business.Test.Auth
         {
             //Act
             _ = _business.DeleteRole(new() { Id = 2 }, new() { Id = 1 }, new() { Id = 1 });
-            ListResult<Role> list = _business.ListRoles("r.idrole = 2", "", 10, 0, new() { Id = 1 });
+            ListResult<Role> list = _business.ListRoles("idrole = 2", "", 10, 0, new() { Id = 1 });
 
             //Assert
             Assert.Equal(0, list.Total);
+        }
+
+        /// <summary>
+        /// Prueba la eliminación de un rol de un usuario con error de persistencia
+        /// </summary>
+        [Fact]
+        public void DeleteRoleWithErrorTest()
+        {
+            //Act Assert
+            Assert.Throws<PersistentException>(() => _business.DeleteRole(new() { Id = 1 }, new() { Id = -2 }, new() { Id = 1 }));
+        }
+
+        /// <summary>
+        /// Prueba la eliminación de un rol de un usuario con error de negocio
+        /// </summary>
+        [Fact]
+        public void DeleteRoleWithError2Test()
+        {
+            //Act Assert
+            Assert.Throws<BusinessException>(() => _business.DeleteRole(new() { Id = 1 }, new() { Id = -1 }, new() { Id = 1 }));
         }
         #endregion
     }
