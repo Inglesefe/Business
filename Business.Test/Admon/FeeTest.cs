@@ -84,7 +84,7 @@ namespace Business.Test.Admon
         public void ListTest()
         {
             //Act
-            ListResult<Fee> list = _business.List("idaccountfee = 1", "name", 1, 0);
+            ListResult<Fee> list = _business.List("idfee = 1", "name", 1, 0);
 
             //Assert
             Assert.NotEmpty(list.List);
@@ -98,7 +98,7 @@ namespace Business.Test.Admon
         public void ListWithErrorTest()
         {
             //Act, Assert
-            Assert.Throws<PersistentException>(() => _business.List("idejecutivocuenta = 1", "name", 1, 0));
+            Assert.Throws<PersistentException>(() => _business.List("idcuota = 1", "name", 1, 0));
         }
 
         /// <summary>
@@ -114,7 +114,7 @@ namespace Business.Test.Admon
             fee = _business.Read(fee);
 
             //Assert
-            Assert.Equal(100, fee.Value);
+            Assert.Equal(1000, fee.Value);
         }
 
         /// <summary>
