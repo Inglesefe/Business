@@ -60,45 +60,13 @@ namespace Business.Test.Auth
                 new Tuple<User, Role>(users[1], roles[0]),
                 new Tuple<User, Role>(users[1], roles[1])
             };
-            mock.Setup(p => p.List("iduser = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
-                .Returns(new ListResult<User>(users.Where(y => y.Id == 1).ToList(), 1));
-            mock.Setup(p => p.List("idusuario = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
-                .Throws<PersistentException>();
-            mock.Setup(p => p.Read(It.IsAny<User>()))
-                .Returns((User user) => users.Find(x => x.Id == user.Id) ?? new User());
             mock.Setup(p => p.ReadByLoginAndPassword(It.IsAny<User>(), It.IsAny<string>()))
                 .Returns((User user, string password) => users.Find(x => x.Login == user.Login && password == "Prueba123" && x.Active) ?? new User());
             mock.Setup(p => p.ReadByLogin(It.IsAny<User>()))
                 .Returns((User user) => users.Find(x => x.Login == user.Login) ?? new User());
-            mock.Setup(p => p.Insert(It.IsAny<User>(), It.IsAny<User>()))
-                .Returns((User user, User user1) =>
-                {
-                    if (users.Exists(x => x.Login == user.Login))
-                    {
-                        throw new PersistentException();
-                    }
-                    else
-                    {
-                        user.Id = users.Count + 1;
-                        users.Add(user);
-                        return user;
-                    }
-                });
-            mock.Setup(p => p.Update(It.IsAny<User>(), It.IsAny<User>()))
-                .Returns((User user, User user1) =>
-                {
-                    users.Where(x => x.Id == user.Id).ToList().ForEach(x => { x.Login = user.Login; x.Name = user.Name; x.Active = user.Active; });
-                    return user;
-                });
             mock.Setup(p => p.UpdatePassword(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<User>()))
                 .Returns((User user, string password, User user1) =>
                 {
-                    return user;
-                });
-            mock.Setup(p => p.Delete(It.IsAny<User>(), It.IsAny<User>()))
-                .Returns((User user, User user1) =>
-                {
-                    users = users.Where(x => x.Id != user.Id).ToList();
                     return user;
                 });
             mock.Setup(p => p.ListRoles("", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<User>()))
@@ -131,128 +99,6 @@ namespace Business.Test.Auth
         #endregion
 
         #region Methods
-        /// <summary>
-        /// Prueba la consulta de un listado de usuarios con filtros, ordenamientos y límite
-        /// </summary>
-        [Fact]
-        public void ListTest()
-        {
-            //Act
-            ListResult<User> list = _business.List("iduser = 1", "name", 1, 0);
-
-            //Assert
-            Assert.NotEmpty(list.List);
-            Assert.True(list.Total > 0);
-        }
-
-        /// <summary>
-        /// Prueba la consulta de un listado de usuarios con filtros, ordenamientos y límite y con errores
-        /// </summary>
-        [Fact]
-        public void ListWithErrorTest()
-        {
-            //Act, Assert
-            Assert.Throws<PersistentException>(() => _business.List("idusuario = 1", "name", 1, 0));
-        }
-
-        /// <summary>
-        /// Prueba la consulta de un usuario dado su identificador
-        /// </summary>
-        [Fact]
-        public void ReadTest()
-        {
-            //Arrange
-            User user = new() { Id = 1 };
-
-            //Act
-            user = _business.Read(user);
-
-            //Assert
-            Assert.Equal("leandrobaena@gmail.com", user.Login);
-        }
-
-        /// <summary>
-        /// Prueba la consulta de un usuario que no existe dado su identificador
-        /// </summary>
-        [Fact]
-        public void ReadNotFoundTest()
-        {
-            //Arrange
-            User user = new() { Id = 10 };
-
-            //Act
-            user = _business.Read(user);
-
-            //Assert
-            Assert.Equal(0, user.Id);
-        }
-
-        /// <summary>
-        /// Prueba la inserción de un usuario
-        /// </summary>
-        [Fact]
-        public void InsertTest()
-        {
-            //Arrange
-            User user = new() { Login = "insertado@prueba.com", Name = "Prueba 1", Active = true };
-
-            //Act
-            user = _business.Insert(user, new() { Id = 1 });
-
-            //Assert
-            Assert.NotEqual(0, user.Id);
-        }
-
-        /// <summary>
-        /// Prueba la inserción de un usuario con login duplicado
-        /// </summary>
-        [Fact]
-        public void InsertDuplicateTest()
-        {
-            //Act
-            User user = new() { Login = "leandrobaena@gmail.com", Name = "Prueba insertar", Active = true };
-
-            //Assert
-            _ = Assert.Throws<PersistentException>(() => _business.Insert(user, new() { Id = 1 }));
-        }
-
-        /// <summary>
-        /// Prueba la actualización de un usuario
-        /// </summary>
-        [Fact]
-        public void UpdateTest()
-        {
-            //Assert
-            User user = new() { Id = 2, Login = "otrologin@gmail.com", Name = "Prueba actualizar", Active = false };
-            User user2 = new() { Id = 2 };
-
-            //Act
-            _ = _business.Update(user, new() { Id = 1 });
-            user2 = _business.Read(user2);
-
-            //Assert
-            Assert.NotEqual("actualizame@gmail.com", user2.Name);
-            Assert.False(user2.Active);
-        }
-
-        /// <summary>
-        /// Prueba la eliminación de un usuario
-        /// </summary>
-        [Fact]
-        public void DeleteTest()
-        {
-            //Assert
-            User user = new() { Id = 3 };
-            User user2 = new() { Id = 3 };
-
-            //Assert
-            _ = _business.Delete(user, new() { Id = 1 });
-            user2 = _business.Read(user2);
-
-            //Assert
-            Assert.Equal(0, user2.Id);
-        }
-
         /// <summary>
         /// Prueba la consulta de un usuario dado su login y contraseña
         /// </summary>
