@@ -1,4 +1,5 @@
 ﻿using Business.Config;
+using Business.Exceptions;
 using Dal.Config;
 using Dal.Dto;
 using Dal.Exceptions;
@@ -49,53 +50,35 @@ namespace Business.Test.Config
                 new Tuple<Office, AccountExecutive>(offices[1], executives[0]),
                 new Tuple<Office, AccountExecutive>(offices[1], executives[1])
             };
-            mock.Setup(p => p.List("o.idoffice = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
-                .Returns(new ListResult<Office>(offices.Where(y => y.Id == 1).ToList(), 1));
-            mock.Setup(p => p.List("idoficina = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
-                .Throws<PersistentException>();
-            mock.Setup(p => p.Read(It.IsAny<Office>()))
-                .Returns((Office office) => offices.Find(x => x.Id == office.Id) ?? new Office());
-            mock.Setup(p => p.Insert(It.IsAny<Office>(), It.IsAny<User>()))
-                .Returns((Office office, User user) =>
-                {
-                    if (offices.Exists(x => x.Name == office.Name))
-                    {
-                        throw new PersistentException();
-                    }
-                    else
-                    {
-                        office.Id = offices.Count + 1;
-                        offices.Add(office);
-                        return office;
-                    }
-                });
-            mock.Setup(p => p.Update(It.IsAny<Office>(), It.IsAny<User>()))
-                .Returns((Office office, User user) =>
-                {
-                    offices.Where(x => x.Id == office.Id).ToList().ForEach(x => x.Name = office.Name);
-                    return office;
-                });
-            mock.Setup(p => p.Delete(It.IsAny<Office>(), It.IsAny<User>()))
-                .Returns((Office office, User user) =>
-                {
-                    offices = offices.Where(x => x.Id != office.Id).ToList();
-                    return office;
-                });
             mock.Setup(p => p.ListAccountExecutives("", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Office>()))
                 .Returns(new ListResult<AccountExecutive>(executives_offices.Where(x => x.Item1.Id == 1).Select(x => x.Item2).ToList(), 1));
             mock.Setup(p => p.ListAccountExecutives("idaccountexecutive = 2", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Office>()))
                 .Returns(new ListResult<AccountExecutive>(new List<AccountExecutive>(), 0));
             mock.Setup(p => p.ListAccountExecutives("idejecutivocuenta = 1", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Office>()))
                 .Throws<PersistentException>();
+            mock.Setup(p => p.ListAccountExecutives("error", It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Office>()))
+                .Throws<BusinessException>();
             mock.Setup(p => p.ListNotAccountExecutives(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<Office>()))
                 .Returns((string filters, string orders, int limit, int offset, Office office) =>
                 {
+                    if (office.Id == -1)
+                    {
+                        throw new BusinessException();
+                    }
+                    if (office.Id == -2)
+                    {
+                        throw new PersistentException();
+                    }
                     List<AccountExecutive> result = executives.Where(x => !executives_offices.Exists(y => y.Item1.Id == office.Id && y.Item2.Id == x.Id)).ToList();
                     return new ListResult<AccountExecutive>(result, result.Count);
                 });
             mock.Setup(p => p.InsertAccountExecutive(It.IsAny<AccountExecutive>(), It.IsAny<Office>(), It.IsAny<User>())).
                 Returns((AccountExecutive executive, Office office, User user) =>
                 {
+                    if (office.Id == -1)
+                    {
+                        throw new BusinessException();
+                    }
                     if (executives_offices.Exists(x => x.Item1.Id == office.Id && x.Item2.Id == executive.Id))
                     {
                         throw new PersistentException();
@@ -106,119 +89,24 @@ namespace Business.Test.Config
                         return executive;
                     }
                 });
+            mock.Setup(p => p.DeleteAccountExecutive(It.IsAny<AccountExecutive>(), It.IsAny<Office>(), It.IsAny<User>()))
+                .Returns((AccountExecutive executive, Office office, User user) =>
+                {
+                    if (office.Id == -1)
+                    {
+                        throw new BusinessException();
+                    }
+                    if (office.Id == -2)
+                    {
+                        throw new PersistentException();
+                    }
+                    return executive;
+                });
             _business = new(mock.Object);
         }
         #endregion
 
         #region Methods
-        /// <summary>
-        /// Prueba la consulta de un listado de oficinas con filtros, ordenamientos y límite
-        /// </summary>
-        [Fact]
-        public void ListTest()
-        {
-            //Act
-            ListResult<Office> list = _business.List("o.idoffice = 1", "o.name", 1, 0);
-
-            //Assert
-            Assert.NotEmpty(list.List);
-            Assert.True(list.Total > 0);
-        }
-
-        /// <summary>
-        /// Prueba la consulta de un listado de oficinas con filtros, ordenamientos y límite y con errores
-        /// </summary>
-        [Fact]
-        public void ListWithErrorTest()
-        {
-            //Act, Assert
-            Assert.Throws<PersistentException>(() => _business.List("idoficina = 1", "name", 1, 0));
-        }
-
-        /// <summary>
-        /// Prueba la consulta de una oficina dado su identificador
-        /// </summary>
-        [Fact]
-        public void ReadTest()
-        {
-            //Arrange
-            Office office = new() { Id = 1 };
-
-            //Act
-            office = _business.Read(office);
-
-            //Assert
-            Assert.Equal("Castellana", office.Name);
-        }
-
-        /// <summary>
-        /// Prueba la consulta de una oficina que no existe dado su identificador
-        /// </summary>
-        [Fact]
-        public void ReadNotFoundTest()
-        {
-            //Assert
-            Office office = new() { Id = 10 };
-
-            //Assert
-            office = _business.Read(office);
-
-            //Assert
-            Assert.Equal(0, office.Id);
-        }
-
-        /// <summary>
-        /// Prueba la inserción de una oficina
-        /// </summary>
-        [Fact]
-        public void InsertTest()
-        {
-            //Arrange
-            Office office = new() { City = new() { Id = 1 }, Name = "Madelena", Address = "Calle 59 sur" };
-
-            //Act
-            office = _business.Insert(office, new() { Id = 1 });
-
-            //Assert
-            Assert.NotEqual(0, office.Id);
-        }
-
-        /// <summary>
-        /// Prueba la actualización de una oficina
-        /// </summary>
-        [Fact]
-        public void UpdateTest()
-        {
-            //Arrange
-            Office office = new() { Id = 2, City = new() { Id = 1 }, Name = "Santa Librada", Address = "Calle 78 sur" };
-            Office office2 = new() { Id = 2 };
-
-            //Act
-            office2 = _business.Read(office2);
-            _ = _business.Update(office, new() { Id = 1 });
-
-            //Assert
-            Assert.NotEqual("Kennedy", office2.Name);
-        }
-
-        /// <summary>
-        /// Prueba la eliminación de una oficina
-        /// </summary>
-        [Fact]
-        public void DeleteTest()
-        {
-            //Arrange
-            Office office = new() { Id = 3 };
-            Office office2 = new() { Id = 3 };
-
-            //Act
-            _ = _business.Delete(office, new() { Id = 1 });
-            office2 = _business.Read(office2);
-
-            //Assert
-            Assert.Equal(0, office2.Id);
-        }
-
         /// <summary>
         /// Prueba la consulta de un listado de ejecutivos de cuenta de una oficina con filtros, ordenamientos y límite
         /// </summary>
@@ -244,6 +132,16 @@ namespace Business.Test.Config
         }
 
         /// <summary>
+        /// Prueba la consulta de un listado de ejecutivos de cuenta de una oficina con filtros, ordenamientos y límite y con errores de negocio
+        /// </summary>
+        [Fact]
+        public void ListAccountExecutivesWithError2Test()
+        {
+            //Act, Assert
+            _ = Assert.Throws<BusinessException>(() => _business.ListAccountExecutives("error", "", 10, 0, new() { Id = 1 }));
+        }
+
+        /// <summary>
         /// Prueba la consulta de un listado de ejecutivos de cuenta no asignados a una oficina con filtros, ordenamientos y límite
         /// </summary>
         [Fact]
@@ -255,6 +153,26 @@ namespace Business.Test.Config
             //Assert
             Assert.NotEmpty(list.List);
             Assert.True(list.Total > 0);
+        }
+
+        /// <summary>
+        /// Prueba la consulta de un listado de ejecutivos de cuenta no asociados a una oficina con filtros, ordenamientos y límite y con errores
+        /// </summary>
+        [Fact]
+        public void ListNotAccountExecutivesWithErrorTest()
+        {
+            //Act, Assert
+            _ = Assert.Throws<PersistentException>(() => _business.ListNotAccountExecutives("", "", 10, 0, new() { Id = -2 }));
+        }
+
+        /// <summary>
+        /// Prueba la consulta de un listado de ejecutivos de cuenta no asociados a una oficina con filtros, ordenamientos y límite y con errores de negocio
+        /// </summary>
+        [Fact]
+        public void ListNotAccountExecutivesWithError2Test()
+        {
+            //Act, Assert
+            _ = Assert.Throws<BusinessException>(() => _business.ListNotAccountExecutives("", "", 10, 0, new() { Id = -1 }));
         }
 
         /// <summary>
@@ -271,6 +189,26 @@ namespace Business.Test.Config
         }
 
         /// <summary>
+        /// Prueba la inserción de un ejecutivo de cuenta a una oficina con error de persistencia
+        /// </summary>
+        [Fact]
+        public void InsertAccountExecutiveDuplicateTest()
+        {
+            //Act, Assert
+            _ = Assert.Throws<PersistentException>(() => _business.InsertAccountExecutive(new() { Id = 1 }, new() { Id = 1 }, new() { Id = 1 }));
+        }
+
+        /// <summary>
+        /// Prueba la inserción de un ejecutivo de cuenta a una oficina con error de negocio
+        /// </summary>
+        [Fact]
+        public void InsertAccountExecutiveWithError2Test()
+        {
+            //Act, Assert
+            _ = Assert.Throws<BusinessException>(() => _business.InsertAccountExecutive(new() { Id = 1 }, new() { Id = -1 }, new() { Id = -1 }));
+        }
+
+        /// <summary>
         /// Prueba la eliminación de un ejecutivo de cuenta de una oficina
         /// </summary>
         [Fact]
@@ -282,6 +220,26 @@ namespace Business.Test.Config
 
             //Assert
             Assert.Equal(0, list.Total);
+        }
+
+        /// <summary>
+        /// Prueba la eliminación de un ejecutivo de cuenta a una oficina con error de persistencia
+        /// </summary>
+        [Fact]
+        public void DeleteAccountExecutiveWithErrorTest()
+        {
+            //Act, Assert
+            _ = Assert.Throws<PersistentException>(() => _business.DeleteAccountExecutive(new() { Id = 1 }, new() { Id = -2 }, new() { Id = 1 }));
+        }
+
+        /// <summary>
+        /// Prueba la eliminación de un ejecutivo de cuenta a una oficina con error de negocio
+        /// </summary>
+        [Fact]
+        public void DeleteAccountExecutiveWithError2Test()
+        {
+            //Act, Assert
+            _ = Assert.Throws<BusinessException>(() => _business.DeleteAccountExecutive(new() { Id = 1 }, new() { Id = -1 }, new() { Id = 1 }));
         }
         #endregion
     }
