@@ -42,6 +42,7 @@ namespace Business.Test.Noti
                 Password = _configuration["Smtp:Password"] ?? "",
                 Port = int.Parse(_configuration["Smtp:Port"] ?? "0"),
                 Ssl = bool.Parse(_configuration["Smtp:Ssl"] ?? "false"),
+                StartTls = bool.Parse(_configuration["Smtp:StartTls"] ?? "false"),
                 Username = _configuration["Smtp:Username"] ?? ""
             };
         }

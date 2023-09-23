@@ -42,7 +42,14 @@ namespace Business.Noti
                 };
 
                 using SmtpClient client = new();
-                client.Connect(smtpConfig.Host, smtpConfig.Port, smtpConfig.Ssl);
+                if (smtpConfig.StartTls)
+                {
+                    client.Connect(smtpConfig.Host, smtpConfig.Port, MailKit.Security.SecureSocketOptions.StartTls);
+                }
+                else
+                {
+                    client.Connect(smtpConfig.Host, smtpConfig.Port, smtpConfig.Ssl);
+                }
                 client.Authenticate(smtpConfig.Username, smtpConfig.Password);
                 client.Send(message);
                 client.Disconnect(true);

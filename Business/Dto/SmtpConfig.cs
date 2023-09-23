@@ -32,6 +32,11 @@
         public bool Ssl { get; set; }
 
         /// <summary>
+        /// Si se habilita o no StartTLS en la conexión con el servidor SMTP
+        /// </summary>
+        public bool StartTls { get; set; }
+
+        /// <summary>
         /// Correo desde el cual se envía la notificación
         /// </summary>
         public string From { get; set; }
@@ -48,6 +53,7 @@
             Host = string.Empty;
             Port = 0;
             Ssl = false;
+            StartTls = false;
             From = string.Empty;
         }
         #endregion
